@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TIITBA Web - Historical Seismograms</title>
+  <link rel="stylesheet" href="/src/styles/main.css" />
+  <link rel="stylesheet" href="/src/styles/panels.css" />
+</head>
+<body>
+  <header class="app-header">
+    <h1>TIITBA <span class="version">v1.0</span></h1>
+    <p class="subtitle">Historical Seismograms Vectorization, Analysis, and Correction</p>
+    <span id="session-indicator" class="session-badge"></span>
+  </header>
+
+  <main class="app-layout">
+    <!-- Left: Control Panels -->
+    <aside class="control-panels">
+      <!-- Tab Navigation -->
+      <nav class="tab-nav">
+        <button class="tab-btn active" data-tab="image">Image Processing</button>
+        <button class="tab-btn" data-tab="vectorization">Vectorization</button>
+        <button class="tab-btn" data-tab="corrections">Corrections</button>
+      </nav>
+
+      <!-- Image Processing Panel -->
+      <section id="panel-image" class="panel active">
+        <div class="panel-section">
+          <h3>Load Image</h3>
+          <input type="file" id="image-upload" accept=".jpg,.jpeg,.png,.tif,.tiff" />
+          <div class="form-row">
+            <label for="ppi-input">PPI:</label>
+            <input type="number" id="ppi-input" placeholder="Auto-detect" step="1" />
+          </div>
+          <button id="btn-upload" class="btn btn-primary" disabled>Upload</button>
+        </div>
+        <div class="panel-section">
+          <h3>Process</h3>
+          <div class="btn-group">
+            <button id="btn-rotate" class="btn" disabled>Rotate 90&deg;</button>
+            <button id="btn-contrast" class="btn" disabled>Enhance Contrast</button>
+            <button id="btn-binarize" class="btn" disabled>Binarize</button>
+            <button id="btn-trim-mode" class="btn" disabled>Trim</button>
+          </div>
+        </div>
+        <div id="image-info" class="info-box"></div>
+      </section>
+
+      <!-- Vectorization Panel -->
+      <section id="panel-vectorization" class="panel">
+        <div class="panel-section">
+          <h3>Define Scale</h3>
+          <div class="radio-group">
+            <label>
+              <input type="radio" name="scale-method" value="timemarks" checked />
+              Time-marks
+            </label>
+            <label>
+              <input type="radio" name="scale-method" value="corners" />
+              Corner values
+            </label>
+          </div>
+          <button id="btn-pick-timemarks" class="btn" disabled>Pick Time-marks</button>
+          <div id="corner-inputs" class="hidden">
+            <div class="form-row">
+              <label>Left X:</label><input type="number" id="corner-left-x" step="any" />
+            </div>
+            <div class="form-row">
+              <label>Top Y:</label><input type="number" id="corner-up-y" step="any" />
+            </div>
+            <div class="form-row">
+              <label>Right X:</label><input type="number" id="corner-right-x" step="any" />
+            </div>
+            <div class="form-row">
+              <label>Bottom Y:</label><input type="number" id="corner-down-y" step="any" />
+            </div>
+            <button id="btn-set-corners" class="btn">Set Corners</button>
+          </div>
+        </div>
+        <div class="panel-section">
+          <h3>Digitize</h3>
+          <button id="btn-vectorize" class="btn btn-primary" disabled>Start Vectorizing</button>
+          <button id="btn-clear-points" class="btn btn-danger" disabled>Clear Points</button>
+          <span id="point-count" class="badge">0 points</span>
+        </div>
+        <div class="panel-section">
+          <button id="btn-plot-preview" class="btn" disabled>Plot Preview</button>
+          <button id="btn-export-ascii" class="btn" disabled>Export ASCII</button>
+        </div>
+      </section>
+
+      <!-- Corrections Panel -->
+      <section id="panel-corrections" class="panel">
+        <div class="panel-section">
+          <h3>Load Data</h3>
+          <input type="file" id="data-upload" accept=".txt,.dat,.asc" />
+          <button id="btn-upload-data" class="btn btn-primary" disabled>Upload Data</button>
+        </div>
+        <div class="panel-section">
+          <h3>Apply Corrections</h3>
+          <button id="btn-polarity" class="btn" disabled>Invert Polarity</button>
+
+          <div class="form-row">
+            <label>Window (s):</label>
+            <input type="number" id="detrend-window" value="60" min="1" />
+          </div>
+          <button id="btn-detrend" class="btn" disabled>Detrend</button>
+
+          <details class="collapsible">
+            <summary>Curvature Correction</summary>
+            <div class="form-row">
+              <label>Drum speed (mm/s):</label>
+              <input type="number" id="curv-speed" step="any" />
+            </div>
+            <div class="form-row">
+              <label>Stylet length (mm):</label>
+              <input type="number" id="curv-stylet" step="any" />
+            </div>
+            <div class="form-row">
+              <label>Inflection amp:</label>
+              <input type="number" id="curv-inflection" step="any" />
+            </div>
+            <div class="form-row">
+              <label>SPS:</label>
+              <input type="number" id="curv-sps" value="100" min="1" />
+            </div>
+            <div class="form-row">
+              <label>Spline order:</label>
+              <select id="curv-spline">
+                <option value="slinear">Linear</option>
+                <option value="quadratic">Quadratic</option>
+                <option value="cubic" selected>Cubic</option>
+              </select>
+            </div>
+            <button id="btn-curvature" class="btn" disabled>Apply Curvature</button>
+          </details>
+
+          <details class="collapsible">
+            <summary>Resample Only</summary>
+            <div class="form-row">
+              <label>SPS:</label>
+              <input type="number" id="resample-sps" value="100" min="1" />
+            </div>
+            <div class="form-row">
+              <label>Spline order:</label>
+              <select id="resample-spline">
+                <option value="slinear">Linear</option>
+                <option value="quadratic">Quadratic</option>
+                <option value="cubic" selected>Cubic</option>
+              </select>
+            </div>
+            <button id="btn-resample" class="btn" disabled>Resample</button>
+          </details>
+
+          <details class="collapsible">
+            <summary>Wiechert Response</summary>
+            <div class="form-row">
+              <label>Period T0 (s):</label>
+              <input type="number" id="wiechert-t0" step="any" />
+            </div>
+            <div class="form-row">
+              <label>Damping &epsilon;:</label>
+              <input type="number" id="wiechert-epsilon" step="any" />
+            </div>
+            <div class="form-row">
+              <label>Magnification V0:</label>
+              <input type="number" id="wiechert-v0" step="1" />
+            </div>
+            <div class="form-row">
+              <label>Water level:</label>
+              <input type="number" id="wiechert-wl" value="0.01" min="0" max="1" step="0.01" />
+            </div>
+            <div class="radio-group">
+              <label><input type="radio" name="wiechert-mode" value="remove" checked /> Remove</label>
+              <label><input type="radio" name="wiechert-mode" value="add" /> Add</label>
+            </div>
+            <button id="btn-wiechert" class="btn" disabled>Apply Wiechert</button>
+          </details>
+        </div>
+        <div class="panel-section">
+          <h3>Export Corrected Data</h3>
+          <select id="export-data-type">
+            <option value="detrend">Detrended</option>
+            <option value="curvature_ga">Curvature (G&A94)</option>
+            <option value="curvature_ls">Curvature (LS)</option>
+            <option value="resampled" selected>Resampled</option>
+            <option value="response">Instrument Response</option>
+          </select>
+          <select id="export-format">
+            <option value="ascii">ASCII</option>
+            <option value="sac">SAC</option>
+            <option value="miniseed">MINISEED</option>
+          </select>
+          <button id="btn-export-corrected" class="btn" disabled>Download</button>
+        </div>
+      </section>
+    </aside>
+
+    <!-- Center: Canvas + Plot -->
+    <div class="workspace">
+      <div id="canvas-container" class="canvas-container">
+        <canvas id="image-canvas"></canvas>
+        <canvas id="overlay-canvas"></canvas>
+        <div id="canvas-status" class="canvas-status">No image loaded</div>
+      </div>
+      <div id="plot-container" class="plot-container"></div>
+    </div>
+
+    <!-- Right: Info Log -->
+    <aside class="info-log-panel">
+      <h3>Log</h3>
+      <div id="info-log" class="info-log"></div>
+    </aside>
+  </main>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
