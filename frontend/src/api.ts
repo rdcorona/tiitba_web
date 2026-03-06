@@ -2,7 +2,8 @@
  * Typed API client for the TIITBA backend.
  */
 
-const BASE = '/api';
+const API_HOST = import.meta.env.VITE_API_URL || '';
+const BASE = `${API_HOST}/api`;
 
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
   const resp = await fetch(`${BASE}${url}`, options);
