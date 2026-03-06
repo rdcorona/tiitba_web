@@ -44,7 +44,28 @@ async function init() {
     });
   });
 
-  log('TIITBA Web v1.0 ready', 'info');
+  // Theme switching
+  const themeToggle = document.getElementById('theme-toggle')!;
+  const iconSun = document.getElementById('theme-icon-sun')!;
+  const iconMoon = document.getElementById('theme-icon-moon')!;
+  let isLightMode = false;
+
+  themeToggle.addEventListener('click', () => {
+    isLightMode = !isLightMode;
+    if (isLightMode) {
+      document.documentElement.setAttribute('data-theme', 'light');
+      iconSun.classList.add('hidden');
+      iconMoon.classList.remove('hidden');
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+      iconMoon.classList.add('hidden');
+      iconSun.classList.remove('hidden');
+    }
+    // Dispatch event to update plots
+    window.dispatchEvent(new Event('themeChanged'));
+  });
+
+  log('Tiitba-Web v1.0 ready', 'info');
 }
 
 init();

@@ -180,6 +180,75 @@ select {
   overflow: hidden;
 }
 
+.plot-container {
+  flex: 1;
+  background: var(--bg-secondary);
+  border-top: none;
+}
+
+/* Modal for Canvas */
+.modal {
+  position: fixed;
+  top: 66px; /* Just below header */
+  left: 330px; /* Right of left sidebar */
+  right: 10px; 
+  bottom: 10px;
+  background: transparent;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  pointer-events: none; /* Let clicks pass through to background */
+}
+
+.modal.hidden {
+  display: none !important;
+}
+
+.modal-content {
+  background: var(--bg-secondary);
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  border-radius: 6px;
+  overflow: hidden;
+  transition: all 0.2s ease-out;
+  pointer-events: auto; /* Catch clicks on the modal itself */
+  box-shadow: 0 4px 25px rgba(0,0,0,0.6);
+}
+
+.modal-content.maximized {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  border-radius: 0;
+  border: none;
+  z-index: 1001;
+}
+
+.modal-header {
+  padding: 8px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-header h2 {
+  font-size: 1.1rem;
+  color: var(--text);
+}
+
+.modal-controls {
+  display: flex;
+  gap: 8px;
+}
+
 .canvas-container {
   position: relative;
   flex: 1;
@@ -204,13 +273,6 @@ select {
   border-radius: 3px;
   font-size: 0.75rem;
   pointer-events: none;
-}
-
-.plot-container {
-  height: 280px;
-  background: var(--bg-secondary);
-  border-top: 1px solid var(--border);
-  flex-shrink: 0;
 }
 
 /* Info Log (right sidebar) */

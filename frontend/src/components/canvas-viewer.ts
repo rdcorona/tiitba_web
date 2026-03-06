@@ -38,11 +38,28 @@ export function initCanvas() {
   imageCtx = imageCanvas.getContext('2d')!;
   overlayCtx = overlayCanvas.getContext('2d')!;
 
+  // Modal controls
+  const modal = document.getElementById('canvas-modal')!;
+  const modalContent = modal.querySelector('.modal-content')!;
+  const btnClose = document.getElementById('btn-close-canvas')!;
+  const btnMax = document.getElementById('btn-maximize-canvas')!;
+
+  btnClose.addEventListener('click', () => {
+    modal.classList.add('hidden');
+  });
+
+  btnMax.addEventListener('click', () => {
+    modalContent.classList.toggle('maximized');
+    btnMax.textContent = modalContent.classList.contains('maximized') ? 'Restore' : 'Maximize';
+    // Let transition finish before resizing canvas
+    setTimeout(resizeCanvases, 250);
+  });
+
   resizeCanvases();
   window.addEventListener('resize', resizeCanvases);
 
   // Mouse events on overlay (top canvas)
-  overlayCanvas.addEventListener('dblclick', handleDoubleClick);
+  overlayCanvas.addEventListener('click', handlePointClick);
   overlayCanvas.addEventListener('mousedown', handleMouseDown);
   overlayCanvas.addEventListener('mousemove', handleMouseMove);
   overlayCanvas.addEventListener('mouseup', handleMouseUp);
@@ -155,9 +172,11 @@ function drawOverlay() {
 
 // --- Event Handlers ---
 
-function handleDoubleClick(e: MouseEvent) {
-  if (state.currentMode === 'view') return;
-  if (!currentImage) return;
+let hasDragged = false;
+
+function handlePointClick(e: MouseEvent) {
+  if (state.currentMode === 'view' || state.currentMode === 'trim') return;
+  if (!currentImage || hasDragged) return;
 
   const rect = overlayCanvas.getBoundingClientRect();
   const dx = e.clientX - rect.left;
@@ -170,6 +189,7 @@ function handleDoubleClick(e: MouseEvent) {
 }
 
 function handleMouseDown(e: MouseEvent) {
+  hasDragged = false;
   // Right-click or middle-click = pan
   if (e.button === 2 || e.button === 1) {
     isPanning = true;
@@ -189,6 +209,7 @@ function handleMouseDown(e: MouseEvent) {
 
 function handleMouseMove(e: MouseEvent) {
   if (isPanning) {
+    hasDragged = true;
     transform.offsetX = e.clientX - panStart.x;
     transform.offsetY = e.clientY - panStart.y;
     redraw();
@@ -254,6 +275,16 @@ function handleWheel(e: WheelEvent) {
 }
 
 // --- Public API ---
+
+export function showCanvasModal() {
+  const modal = document.getElementById('canvas-modal');
+  if (modal) {
+    modal.classList.remove('hidden');
+    // Force a synchronous layout calculation
+    void modal.offsetWidth;
+    window.dispatchEvent(new Event('resize'));
+  }
+}
 
 export function setPointClickHandler(handler: (imgX: number, imgY: number) => void) {
   onPointClick = handler;

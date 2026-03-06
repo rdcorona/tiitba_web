@@ -7,7 +7,7 @@ import { state } from '../state';
 import { log } from './info-log';
 import {
   setPointClickHandler, clearOverlay, refreshOverlay,
-  removeLastOverlayPoint,
+  removeLastOverlayPoint, showCanvasModal
 } from './canvas-viewer';
 import { plotTraces } from './plot-viewer';
 import { registerKey, unregisterKey } from '../utils/keyboard';
@@ -19,6 +19,7 @@ export function initVectorizationPanel() {
   const btnPickTm = document.getElementById('btn-pick-timemarks') as HTMLButtonElement;
   const btnSetCorners = document.getElementById('btn-set-corners') as HTMLButtonElement;
   const btnVectorize = document.getElementById('btn-vectorize') as HTMLButtonElement;
+  const btnShowCanvasVec = document.getElementById('btn-show-canvas-vec') as HTMLButtonElement;
   const btnClear = document.getElementById('btn-clear-points') as HTMLButtonElement;
   const btnPlot = document.getElementById('btn-plot-preview') as HTMLButtonElement;
   const btnExport = document.getElementById('btn-export-ascii') as HTMLButtonElement;
@@ -42,10 +43,16 @@ export function initVectorizationPanel() {
     btnPlot.disabled = state.localPoints.length === 0;
     btnExport.disabled = state.localPoints.length === 0;
     pointCount.textContent = `${state.localPoints.length} points`;
+    if (state.hasImage) {
+      btnShowCanvasVec.classList.remove('hidden');
+    }
   });
+
+  btnShowCanvasVec.addEventListener('click', showCanvasModal);
 
   // --- Timemark Picking ---
   btnPickTm.addEventListener('click', () => {
+    showCanvasModal();
     if (isPickingTimemarks) {
       finishTimemarkPicking();
       return;
@@ -55,7 +62,7 @@ export function initVectorizationPanel() {
     state.currentMode = 'timemarks';
     state.localPoints = [];
     btnPickTm.textContent = 'Finish Picking';
-    log('Double-click on 3+ time-marks (60s apart). Press Finish when done.', 'info');
+    log('Click on 3+ time-marks (60s apart). Press Finish when done.', 'info');
 
     setPointClickHandler((imgX, imgY) => {
       timemarkPoints.push({ x: imgX, y: imgY });
@@ -96,6 +103,7 @@ export function initVectorizationPanel() {
 
   // --- Corner Values ---
   btnSetCorners.addEventListener('click', async () => {
+    showCanvasModal();
     const leftX = parseFloat((document.getElementById('corner-left-x') as HTMLInputElement).value);
     const upY = parseFloat((document.getElementById('corner-up-y') as HTMLInputElement).value);
     const rightX = parseFloat((document.getElementById('corner-right-x') as HTMLInputElement).value);
@@ -126,10 +134,11 @@ export function initVectorizationPanel() {
   });
 
   function startVectorizing() {
+    showCanvasModal();
     state.isVectorizing = true;
     state.currentMode = 'vectorize';
     btnVectorize.textContent = 'Stop Vectorizing';
-    log('Double-click to mark points. Z=undo, Esc=stop', 'info');
+    log('Click to mark points. Z=undo, Esc=stop', 'info');
 
     setPointClickHandler(async (imgX, imgY) => {
       // Optimistic render
@@ -186,14 +195,21 @@ export function initVectorizationPanel() {
 
   // --- Plot Preview ---
   btnPlot.addEventListener('click', async () => {
+    document.getElementById('canvas-modal')?.classList.add('hidden');
     try {
       const data = await api.getPlotData(state.sessionId);
+      if (!data.time || data.time.length === 0) {
+        throw new Error("Received empty data for plotting");
+      }
       plotTraces(
         [{ name: 'Vectorized', x: data.time, y: data.amplitude }],
         data.xlabel, data.ylabel,
       );
       log('Plot updated', 'success');
-    } catch (e: any) { log(`Plot failed: ${e.message}`, 'error'); }
+    } catch (e: any) { 
+      log(`Plot failed: ${e.message}`, 'error'); 
+      console.error("Plot error:", e);
+    }
   });
 
   // --- Export ASCII ---

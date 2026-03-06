@@ -142,10 +142,26 @@ async def binarize_image(
     if session.img is None:
         raise HTTPException(400, "No image loaded")
 
+    session.img_pre_binarize = session.img.copy()
     threshold, binary = imgproc.binarize(session.img)
     session.img = binary
     session.display_jpeg = None
     return BinarizeResult(threshold=threshold)
+
+@router.post("/sessions/{sid}/image/binarize/undo", response_model=ImageDimensions)
+async def undo_binarize_image(
+    sid: str,
+    session: SessionState = Depends(get_session),
+):
+    """Undo binarization by restoring the previous image state."""
+    if session.img_pre_binarize is None:
+        raise HTTPException(400, "No previous state to restore")
+
+    session.img = session.img_pre_binarize
+    session.img_pre_binarize = None
+    session.display_jpeg = None
+    h, w = session.img.shape[:2]
+    return ImageDimensions(width=w, height=h)
 
 
 @router.post("/sessions/{sid}/image/trim", response_model=ImageDimensions)

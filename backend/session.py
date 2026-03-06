@@ -21,6 +21,7 @@ class SessionState:
 
     # Image processing
     img: np.ndarray | None = None
+    img_pre_binarize: np.ndarray | None = None
     display_jpeg: bytes | None = None
     display_scale: float = 1.0
     ppi: float | None = None

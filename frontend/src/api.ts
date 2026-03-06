@@ -77,6 +77,12 @@ export async function binarizeImage(sid: string) {
   );
 }
 
+export async function undoBinarizeImage(sid: string) {
+  return request<{ width: number; height: number }>(
+    `/sessions/${sid}/image/binarize/undo`, { method: 'POST' }
+  );
+}
+
 export async function trimImage(sid: string, x: number, y: number, w: number, h: number) {
   return request<{ width: number; height: number }>(
     `/sessions/${sid}/image/trim`, {

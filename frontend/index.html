@@ -4,14 +4,31 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TIITBA Web - Historical Seismograms</title>
+  <link rel="icon" href="/logo.ico" type="image/x-icon" />
   <link rel="stylesheet" href="/src/styles/main.css" />
   <link rel="stylesheet" href="/src/styles/panels.css" />
 </head>
 <body>
   <header class="app-header">
-    <h1>TIITBA <span class="version">v1.0</span></h1>
-    <p class="subtitle">Historical Seismograms Vectorization, Analysis, and Correction</p>
-    <span id="session-indicator" class="session-badge"></span>
+    <div class="header-left">
+      <img src="/logo_unam.png" alt="UNAM Logo" class="app-logo unam-logo" />
+    </div>
+    <div class="header-center">
+      <div class="title-container">
+        <img src="/logo.png" alt="Tiitba Logo" class="app-logo tiitba-logo" />
+        <h1>Tiitba-Web <span class="version">V1.0</span></h1>
+      </div>
+      <p class="subtitle">Historical Seismograms Vectorization, Analysis, and Corrections</p>
+    </div>
+    <div class="header-right">
+      <button id="theme-toggle" class="theme-toggle-icon" aria-label="Toggle theme">
+        <!-- Sun icon -->
+        <svg id="theme-icon-sun" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+        <!-- Moon icon -->
+        <svg id="theme-icon-moon" class="hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+      </button>
+      <span id="session-indicator" class="session-badge"></span>
+    </div>
   </header>
 
   <main class="app-layout">
@@ -33,7 +50,7 @@
             <label for="ppi-input">PPI:</label>
             <input type="number" id="ppi-input" placeholder="Auto-detect" step="1" />
           </div>
-          <button id="btn-upload" class="btn btn-primary" disabled>Upload</button>
+          <button id="btn-show-canvas" class="btn hidden">Show Canvas</button>
         </div>
         <div class="panel-section">
           <h3>Process</h3>
@@ -41,6 +58,7 @@
             <button id="btn-rotate" class="btn" disabled>Rotate 90&deg;</button>
             <button id="btn-contrast" class="btn" disabled>Enhance Contrast</button>
             <button id="btn-binarize" class="btn" disabled>Binarize</button>
+            <button id="btn-undo-binarize" class="btn hidden">Undo Binarize</button>
             <button id="btn-trim-mode" class="btn" disabled>Trim</button>
           </div>
         </div>
@@ -81,6 +99,7 @@
         <div class="panel-section">
           <h3>Digitize</h3>
           <button id="btn-vectorize" class="btn btn-primary" disabled>Start Vectorizing</button>
+          <button id="btn-show-canvas-vec" class="btn hidden">Show Canvas</button>
           <button id="btn-clear-points" class="btn btn-danger" disabled>Clear Points</button>
           <span id="point-count" class="badge">0 points</span>
         </div>
@@ -197,13 +216,8 @@
       </section>
     </aside>
 
-    <!-- Center: Canvas + Plot -->
+    <!-- Center: Plot -->
     <div class="workspace">
-      <div id="canvas-container" class="canvas-container">
-        <canvas id="image-canvas"></canvas>
-        <canvas id="overlay-canvas"></canvas>
-        <div id="canvas-status" class="canvas-status">No image loaded</div>
-      </div>
       <div id="plot-container" class="plot-container"></div>
     </div>
 
@@ -213,6 +227,24 @@
       <div id="info-log" class="info-log"></div>
     </aside>
   </main>
+
+  <!-- Modal for Image Canvas -->
+  <div id="canvas-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Image Canvas</h2>
+        <div class="modal-controls">
+          <button id="btn-maximize-canvas" class="btn">Maximize</button>
+          <button id="btn-close-canvas" class="btn btn-danger">Close</button>
+        </div>
+      </div>
+      <div id="canvas-container" class="canvas-container">
+        <canvas id="image-canvas"></canvas>
+        <canvas id="overlay-canvas"></canvas>
+        <div id="canvas-status" class="canvas-status">No image loaded</div>
+      </div>
+    </div>
+  </div>
 
   <script type="module" src="/src/main.ts"></script>
 </body>

@@ -5,30 +5,27 @@
 import * as api from '../api';
 import { state } from '../state';
 import { log } from './info-log';
-import { loadImage, setTrimCompleteHandler, clearOverlay } from './canvas-viewer';
+import { loadImage, setTrimCompleteHandler, clearOverlay, showCanvasModal } from './canvas-viewer';
 
 export function initImagePanel() {
   const fileInput = document.getElementById('image-upload') as HTMLInputElement;
   const ppiInput = document.getElementById('ppi-input') as HTMLInputElement;
-  const btnUpload = document.getElementById('btn-upload') as HTMLButtonElement;
   const btnRotate = document.getElementById('btn-rotate') as HTMLButtonElement;
   const btnContrast = document.getElementById('btn-contrast') as HTMLButtonElement;
   const btnBinarize = document.getElementById('btn-binarize') as HTMLButtonElement;
+  const btnUndoBinarize = document.getElementById('btn-undo-binarize') as HTMLButtonElement;
   const btnTrim = document.getElementById('btn-trim-mode') as HTMLButtonElement;
+  const btnShowCanvas = document.getElementById('btn-show-canvas') as HTMLButtonElement;
   const imageInfo = document.getElementById('image-info')!;
+  const canvasModal = document.getElementById('canvas-modal')!;
 
-  fileInput.addEventListener('change', () => {
-    btnUpload.disabled = !fileInput.files?.length;
-  });
-
-  btnUpload.addEventListener('click', async () => {
+  fileInput.addEventListener('change', async () => {
     if (!fileInput.files?.length) return;
     const file = fileInput.files[0];
     const ppi = ppiInput.value ? parseFloat(ppiInput.value) : undefined;
 
     try {
-      btnUpload.disabled = true;
-      btnUpload.textContent = 'Uploading...';
+      log('Uploading image...', 'info');
       const result = await api.uploadImage(state.sessionId, file, ppi);
 
       state.hasImage = true;
@@ -37,6 +34,7 @@ export function initImagePanel() {
       state.imageHeight = result.height;
       state.notify();
 
+      showCanvasModal();
       await reloadImage();
 
       log(`Loaded: ${result.filename} (${result.width}x${result.height})`, 'success');
@@ -48,12 +46,14 @@ export function initImagePanel() {
       }
 
       enableProcessButtons(true);
+      btnShowCanvas.classList.remove('hidden');
     } catch (e: any) {
       log(`Upload failed: ${e.message}`, 'error');
-    } finally {
-      btnUpload.disabled = false;
-      btnUpload.textContent = 'Upload';
     }
+  });
+
+  btnShowCanvas.addEventListener('click', () => {
+    showCanvasModal();
   });
 
   btnRotate.addEventListener('click', async () => {
@@ -76,8 +76,20 @@ export function initImagePanel() {
     try {
       const result = await api.binarizeImage(state.sessionId);
       await reloadImage();
+      btnBinarize.classList.add('hidden');
+      btnUndoBinarize.classList.remove('hidden');
       log(`Binarized (Otsu threshold: ${result.threshold.toFixed(1)})`, 'success');
     } catch (e: any) { log(`Binarize failed: ${e.message}`, 'error'); }
+  });
+
+  btnUndoBinarize.addEventListener('click', async () => {
+    try {
+      await api.undoBinarizeImage(state.sessionId);
+      await reloadImage();
+      btnUndoBinarize.classList.add('hidden');
+      btnBinarize.classList.remove('hidden');
+      log('Binarization undone', 'success');
+    } catch (e: any) { log(`Undo binarize failed: ${e.message}`, 'error'); }
   });
 
   btnTrim.addEventListener('click', () => {
