@@ -12,7 +12,43 @@ A web-based version of TIITBA built with FastAPI (Python) and vanilla TypeScript
 
 ## Quick Start
 
-### 1. Backend
+### 1. Run Locally (Fastest for Development)
+
+If you have **Python 3** and **Node.js** installed, you can start the application with a single command. The script handles dependency installation and frontend building automatically.
+
+- **Windows:** Double-click `run-local.bat` or run it from the terminal.
+- **Linux/macOS:** Run `chmod +x run-local.sh && ./run-local.sh`.
+
+Once started, open **http://localhost:8000** in your browser.
+
+---
+
+### 2. Run with Docker (Recommended for Users)
+
+#### Option A: Pull the pre-built image (Easiest)
+You don't need to download the source code, just run:
+```bash
+docker run -p 8000:8000 ghcr.io/rdcoronaf/tiitba-web:latest
+```
+
+#### Option B: Build and run locally
+Use this if you want to run your local changes inside a container:
+- **Windows:** Run `run-docker.bat`.
+- **Linux/macOS:** Run `chmod +x run-docker.sh && ./run-docker.sh`.
+
+Or use manual commands:
+```bash
+docker compose up --build -d
+```
+Open **http://localhost:8000** in your browser. To stop, run `docker compose down`.
+
+---
+
+### 3. Manual Development Setup
+
+If you prefer to run the components separately for development:
+
+#### 1. Backend
 
 ```bash
 cd tiitba_webapp
@@ -43,12 +79,20 @@ npm run build
 uvicorn backend.main:app --host 0.0.0.0 --port 8000
 ```
 
-### Docker
+### Docker (Recommended)
 
+The easiest way to run the application is using Docker. This will build both the frontend and backend and serve them on port 8000.
+
+**Using scripts:**
+- **Windows:** Double-click `run-docker.bat` or run it from the terminal.
+- **Linux/macOS:** Run `chmod +x run-docker.sh && ./run-docker.sh`.
+
+**Manual commands:**
 ```bash
-docker build -t tiitba-web .
-docker run -p 8000:8000 tiitba-web
+docker compose up --build -d
 ```
+
+Open http://localhost:8000 in your browser. To stop the application, run `docker compose down`.
 
 ## Workflow
 

@@ -1,0 +1,8 @@
+services:
+  tiitba:
+    build: .
+    image: tiitba-web:latest
+    container_name: tiitba-web
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
