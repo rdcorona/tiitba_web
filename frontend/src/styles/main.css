@@ -5,49 +5,83 @@
 }
 
 :root {
-  /* Dark Theme (Default) */
-  --bg-primary: #0a192f;
-  --bg-secondary: #112240;
-  --bg-panel: #233554;
-  --accent: #e94560;
-  --accent-hover: #ff6b81;
-  --text: #e6f1ff;
-  --text-muted: #8892b0;
-  --border: #303c55;
-  --success: #4caf50;
-  --danger: #ff4c4c;
+  /* Dark Theme (Default) - NASA / High-Tech Dashboard */
+  --bg-app: #09090b; /* Charcoal Black / True Deep Black */
+  --bg-bento: rgba(24, 24, 27, 0.7); /* Slate Gray / Deep Blue tint with opacity for Glass */
+  --bg-bento-solid: #18181b;
+  --bg-bento-hover: rgba(39, 39, 42, 0.8);
+  --bg-input: rgba(0, 0, 0, 0.5);
+  
+  --accent-base: #2563eb; /* Deep Blue base */
+  --accent: #3b82f6; /* Tech Blue */
+  --accent-glow: rgba(59, 130, 246, 0.5);
+  --accent-hover: #60a5fa;
+  
+  --text: #f8fafc;
+  --text-muted: #a1a1aa;
+  
+  --border: rgba(255, 255, 255, 0.1);
+  --border-focus: rgba(59, 130, 246, 0.5);
+  
+  --success: #10b981; /* Emerald Green */
+  --danger: #ef4444; /* Vibrant Red */
+  
+  /* Glassmorphism settings */
+  --glass-blur: blur(12px);
+  --shadow-bento: 0 4px 24px -1px rgba(0, 0, 0, 0.5);
+  --radius-bento: 16px;
+  --radius-sm: 8px;
+  --transition-tech: 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 [data-theme="light"] {
-  /* Light Theme */
-  --bg-primary: #f0f4f8;
-  --bg-secondary: #ffffff;
-  --bg-panel: #e2e8f0;
-  --accent: #0277bd; /* Blue */
-  --accent-hover: #01579b;
-  --text: #1a202c;
-  --text-muted: #4a5568;
-  --border: #cbd5e1;
-  --success: #2e7d32; /* Green */
-  --danger: #c62828;
+  /* Light Theme - Pure White base */
+  --bg-app: #ffffff; /* Pure White */
+  --bg-bento: rgba(244, 244, 245, 0.7); /* Light Slate with opacity */
+  --bg-bento-solid: #f4f4f5;
+  --bg-bento-hover: rgba(228, 228, 231, 0.8);
+  --bg-input: #ffffff;
+  
+  --accent-base: #1d4ed8; 
+  --accent: #2563eb; 
+  --accent-glow: rgba(37, 99, 235, 0.3);
+  --accent-hover: #1e40af;
+  
+  --text: #09090b;
+  --text-muted: #52525b;
+  
+  --border: rgba(0, 0, 0, 0.1);
+  --border-focus: rgba(37, 99, 235, 0.5);
+  
+  --success: #059669; /* Emerald Green */
+  --danger: #dc2626; /* Vibrant Red */
+  
+  --shadow-bento: 0 4px 24px -1px rgba(0, 0, 0, 0.08);
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: var(--bg-primary);
+  font-family: 'Inter', -apple-system, sans-serif;
+  background: var(--bg-app);
   color: var(--text);
   min-height: 100vh;
-  transition: background-color 0.3s, color 0.3s;
+  transition: background-color var(--transition-tech), color var(--transition-tech);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Typography tech classes */
+.font-tech {
+  font-family: 'JetBrains Mono', monospace;
 }
 
 .app-header {
-  background: var(--bg-secondary);
-  padding: 12px 24px;
-  border-bottom: 2px solid var(--accent);
+  background: transparent;
+  padding: 16px 24px;
   display: flex;
   align-items: center;
   position: relative;
   justify-content: center;
+  z-index: 10;
+  height: 70px;
 }
 
 .header-left {
@@ -59,10 +93,15 @@ body {
 
 .app-logo {
   object-fit: contain;
+  transition: transform var(--transition-tech);
+}
+.app-logo:hover {
+  transform: scale(1.05);
 }
 
 .unam-logo {
   height: 44px;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
 }
 
 .header-center {
@@ -79,24 +118,36 @@ body {
 }
 
 .tiitba-logo {
-  height: 30px;
+  height: 28px;
 }
 
 .app-header h1 {
-  font-size: 1.4rem;
+  font-size: 1.3rem;
   font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   margin: 0;
+  color: var(--text);
 }
 
 .app-header .version {
-  font-size: 0.8rem;
-  color: var(--accent);
-  font-weight: 400;
+  font-size: 0.65rem;
+  font-family: 'JetBrains Mono', monospace;
+  background: var(--accent-base);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  vertical-align: top;
+  margin-left: 4px;
 }
 
 .app-header .subtitle {
-  font-size: 0.85rem;
+  font-size: 0.75rem;
+  font-family: 'JetBrains Mono', monospace;
   color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   margin: 0;
 }
 
@@ -105,36 +156,55 @@ body {
   right: 24px;
   display: flex;
   align-items: center;
+  gap: 16px;
 }
 
 .theme-toggle-icon {
-  background: transparent;
+  background: var(--bg-bento);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   color: var(--text);
-  border: none;
+  border: 1px solid var(--border);
   border-radius: 50%;
   padding: 8px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.2s, color 0.2s;
-  margin-right: 12px;
+  transition: all var(--transition-tech);
 }
 
 .theme-toggle-icon:hover {
-  background: var(--bg-panel);
+  background: var(--bg-bento-hover);
   color: var(--accent);
+  box-shadow: 0 0 15px var(--accent-glow);
 }
 
 .session-badge {
-  font-size: 0.75rem;
-  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--success);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.session-badge::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 8px var(--success);
 }
 
+/* Bento Grid Layout */
 .app-layout {
   display: grid;
-  grid-template-columns: 320px 1fr 260px;
-  height: calc(100vh - 56px);
+  grid-template-columns: 360px 1fr 300px;
+  height: calc(100vh - 70px);
+  padding: 0 16px 16px 16px;
+  gap: 16px;
   overflow: hidden;
 }
 
@@ -143,27 +213,46 @@ body {
 }
 
 .badge {
-  display: inline-block;
-  background: var(--accent);
-  color: white;
+  display: inline-flex;
+  align-items: center;
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--accent);
+  border: 1px solid var(--border-focus);
   padding: 2px 8px;
-  border-radius: 10px;
-  font-size: 0.75rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-family: 'JetBrains Mono', monospace;
 }
 
 h3 {
-  font-size: 0.9rem;
-  margin-bottom: 8px;
-  color: var(--accent);
+  font-size: 0.8rem;
+  margin-bottom: 16px;
+  color: var(--text);
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.1em;
+  display: flex;
+  align-items: center;
+}
+
+h3::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: var(--accent);
+  margin-right: 8px;
+  box-shadow: 0 0 8px var(--accent-glow);
 }
 
 .info-box {
-  background: var(--bg-secondary);
-  padding: 8px;
-  border-radius: 4px;
-  font-size: 0.8rem;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-family: 'JetBrains Mono', monospace;
   color: var(--text-muted);
-  margin-top: 8px;
+  margin-top: 16px;
+  line-height: 1.5;
 }

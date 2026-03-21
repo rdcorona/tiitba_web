@@ -60,7 +60,7 @@ export function initVectorizationPanel() {
     isPickingTimemarks = true;
     timemarkPoints = [];
     state.currentMode = 'timemarks';
-    state.localPoints = [];
+    state.localPoints.length = 0;
     btnPickTm.textContent = 'Finish Picking';
     log('Click on 3+ time-marks (60s apart). Press Finish when done.', 'info');
 
@@ -195,7 +195,9 @@ export function initVectorizationPanel() {
 
   // --- Plot Preview ---
   btnPlot.addEventListener('click', async () => {
-    document.getElementById('canvas-modal')?.classList.add('hidden');
+    const plotTabBtn = document.querySelector('.workspace-tab[data-target="plot-view"]') as HTMLButtonElement;
+    if (plotTabBtn) plotTabBtn.click();
+    
     try {
       const data = await api.getPlotData(state.sessionId);
       if (!data.time || data.time.length === 0) {
