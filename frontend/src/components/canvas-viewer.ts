@@ -38,21 +38,15 @@ export function initCanvas() {
   imageCtx = imageCanvas.getContext('2d')!;
   overlayCtx = overlayCanvas.getContext('2d')!;
 
-  // Modal controls
-  const modal = document.getElementById('canvas-modal')!;
-  const modalContent = modal.querySelector('.modal-content')!;
-  const btnClose = document.getElementById('btn-close-canvas')!;
+  // Tab and maximize controls
+  const workspace = document.querySelector('.workspace')!;
   const btnMax = document.getElementById('btn-maximize-canvas')!;
 
-  btnClose.addEventListener('click', () => {
-    modal.classList.add('hidden');
-  });
-
   btnMax.addEventListener('click', () => {
-    modalContent.classList.toggle('maximized');
-    btnMax.textContent = modalContent.classList.contains('maximized') ? 'Restore' : 'Maximize';
+    workspace.classList.toggle('maximized');
+    btnMax.textContent = workspace.classList.contains('maximized') ? 'Restore' : 'Maximize';
     // Let transition finish before resizing canvas
-    setTimeout(resizeCanvases, 250);
+    setTimeout(resizeCanvases, 350);
   });
 
   resizeCanvases();
@@ -277,13 +271,11 @@ function handleWheel(e: WheelEvent) {
 // --- Public API ---
 
 export function showCanvasModal() {
-  const modal = document.getElementById('canvas-modal');
-  if (modal) {
-    modal.classList.remove('hidden');
-    // Force a synchronous layout calculation
-    void modal.offsetWidth;
-    window.dispatchEvent(new Event('resize'));
+  const tabBtn = document.querySelector('.workspace-tab[data-target="canvas-view"]') as HTMLButtonElement;
+  if (tabBtn) {
+    tabBtn.click();
   }
+  window.dispatchEvent(new Event('resize'));
 }
 
 export function setPointClickHandler(handler: (imgX: number, imgY: number) => void) {
@@ -295,7 +287,7 @@ export function setTrimCompleteHandler(handler: (x: number, y: number, w: number
 }
 
 export function clearOverlay() {
-  state.localPoints = [];
+  state.localPoints.length = 0;
   trimRect = null;
   drawOverlay();
 }

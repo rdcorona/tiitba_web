@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TIITBA Web - Historical Seismograms</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="icon" href="/logo.ico" type="image/x-icon" />
   <link rel="stylesheet" href="/src/styles/main.css" />
   <link rel="stylesheet" href="/src/styles/panels.css" />
@@ -11,7 +14,7 @@
 <body>
   <header class="app-header">
     <div class="header-left">
-      <img src="/logo_unam.png" alt="UNAM Logo" class="app-logo unam-logo" />
+      <img src="/logo-unam_lpng.png" alt="UNAM Logo" class="app-logo unam-logo" />
     </div>
     <div class="header-center">
       <div class="title-container">
@@ -216,9 +219,30 @@
       </section>
     </aside>
 
-    <!-- Center: Plot -->
+    <!-- Center: Workspace -->
     <div class="workspace">
-      <div id="plot-container" class="plot-container"></div>
+      <!-- Workspace Navigation/Tabs -->
+      <div class="workspace-tabs" id="workspace-tabs">
+        <button class="workspace-tab active" data-target="canvas-view">Image Canvas</button>
+        <button class="workspace-tab" data-target="plot-view">Plot Preview</button>
+        <div class="workspace-controls" style="margin-left: auto;">
+          <button id="btn-maximize-canvas" class="btn btn-primary btn-sm">Maximize</button>
+        </div>
+      </div>
+
+      <!-- Canvas View -->
+      <div id="canvas-view" class="workspace-view active">
+        <div id="canvas-container" class="canvas-container">
+          <canvas id="image-canvas"></canvas>
+          <canvas id="overlay-canvas"></canvas>
+          <div id="canvas-status" class="canvas-status">No image loaded</div>
+        </div>
+      </div>
+
+      <!-- Plot View -->
+      <div id="plot-view" class="workspace-view hidden">
+        <div id="plot-container" class="plot-container"></div>
+      </div>
     </div>
 
     <!-- Right: Info Log -->
@@ -227,24 +251,6 @@
       <div id="info-log" class="info-log"></div>
     </aside>
   </main>
-
-  <!-- Modal for Image Canvas -->
-  <div id="canvas-modal" class="modal hidden">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2>Image Canvas</h2>
-        <div class="modal-controls">
-          <button id="btn-maximize-canvas" class="btn">Maximize</button>
-          <button id="btn-close-canvas" class="btn btn-danger">Close</button>
-        </div>
-      </div>
-      <div id="canvas-container" class="canvas-container">
-        <canvas id="image-canvas"></canvas>
-        <canvas id="overlay-canvas"></canvas>
-        <div id="canvas-status" class="canvas-status">No image loaded</div>
-      </div>
-    </div>
-  </div>
 
   <script type="module" src="/src/main.ts"></script>
 </body>

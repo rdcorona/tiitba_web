@@ -86,18 +86,17 @@ if %errorlevel% neq 0 (
 )
 
 :: 4. Run App
+
 echo.
 echo ========================================================
 echo                  SERVER IS READY!                       
 echo ========================================================
 echo.
 echo    1. Open your browser.
-echo    2. Go to: http://127.0.0.1:8000
-echo.
+echo    2. Go to: http://127.0.0.1:8000 for the backend API.
 echo    Keep this window open to keep the server running.
 echo    Press Ctrl+C to stop the server and close.
 echo ========================================================
 echo.
 python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
-
 pause
