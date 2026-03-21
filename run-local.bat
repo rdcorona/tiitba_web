@@ -94,7 +94,6 @@ echo ========================================================
 echo.
 echo    1. Open your browser.
 echo    2. Go to: http://127.0.0.1:8000 for the backend API.
-echo    3. Go to: http://localhost:5173 for the frontend application.
 echo    Keep this window open to keep the server running.
 echo    Press Ctrl+C to stop the server and close.
 echo ========================================================
