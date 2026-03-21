@@ -81,7 +81,6 @@ themeToggle.addEventListener('click', () => {
 });
     // Dispatch event to update plots
     window.dispatchEvent(new Event('themeChanged'));
-  });
 
   log('Tiitba-Web v1.0 ready', 'info');
 }
