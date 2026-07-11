@@ -10,6 +10,7 @@
   <link rel="icon" href="/logo.ico" type="image/x-icon" />
   <link rel="stylesheet" href="/src/styles/main.css" />
   <link rel="stylesheet" href="/src/styles/panels.css" />
+  <link rel="stylesheet" href="/src/styles/modal.css" />
 </head>
 <body>
   <header class="app-header">
@@ -35,197 +36,195 @@
   </header>
 
   <main class="app-layout">
-    <!-- Left: Control Panels -->
-    <aside class="control-panels">
-      <!-- Tab Navigation -->
-      <nav class="tab-nav">
-        <button class="tab-btn active" data-tab="image">Image Processing</button>
-        <button class="tab-btn" data-tab="vectorization">Vectorization</button>
-        <button class="tab-btn" data-tab="corrections">Corrections</button>
-      </nav>
+    <!-- Main Side Navigation (Modules) -->
+    <nav class="side-nav">
+      <div class="nav-brand">
+        <img src="/logo.png" alt="Logo" />
+        <span>TIITBA</span>
+      </div>
+      <button class="nav-item active" data-tab="image" title="Image Processing">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+        <span>Image</span>
+      </button>
+      <button class="nav-item" data-tab="vectorization" title="Vectorization">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20v-8m0 0V4m0 8h8m-8 0H4"></path></svg>
+        <span>Vectorize</span>
+      </button>
+      <button class="nav-item" data-tab="corrections" title="Corrections & Export">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+        <span>Correct</span>
+      </button>
+      <div class="nav-spacer"></div>
+      <button id="btn-session-history" class="nav-item" title="Recent Sessions">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v4l3 3m6-3a9 9 0 1 1-9-9 9 9 0 0 1 9 9z"></path></svg>
+        <span>History</span>
+      </button>
+    </nav>
 
+    <!-- Control Panels (Second Level Nav / Options) -->
+    <aside class="control-panels">
       <!-- Image Processing Panel -->
       <section id="panel-image" class="panel active">
-        <div class="panel-section">
-          <h3>Load Image</h3>
-          <input type="file" id="image-upload" accept=".jpg,.jpeg,.png,.tif,.tiff" />
-          <div class="form-row">
-            <label for="ppi-input">PPI:</label>
-            <input type="number" id="ppi-input" placeholder="Auto-detect" step="1" />
-          </div>
-          <button id="btn-show-canvas" class="btn hidden">Show Canvas</button>
+        <div class="panel-header">
+          <h2>Image Processing</h2>
         </div>
-        <div class="panel-section">
-          <h3>Process</h3>
-          <div class="btn-group">
-            <button id="btn-rotate" class="btn" disabled>Rotate 90&deg;</button>
-            <button id="btn-contrast" class="btn" disabled>Enhance Contrast</button>
-            <button id="btn-binarize" class="btn" disabled>Binarize</button>
-            <button id="btn-undo-binarize" class="btn hidden">Undo Binarize</button>
-            <button id="btn-trim-mode" class="btn" disabled>Trim</button>
+        <div class="panel-scroll">
+          <div class="panel-section">
+            <h3>Input</h3>
+            <div class="upload-zone" id="image-drop-zone">
+              <input type="file" id="image-upload" accept=".jpg,.jpeg,.png,.tif,.tiff" class="hidden" />
+              <label for="image-upload" class="upload-label">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                <span>Upload Seismogram</span>
+              </label>
+            </div>
+            <div class="form-row">
+              <label for="ppi-input">PPI:</label>
+              <input type="number" id="ppi-input" placeholder="Auto-detect" step="1" />
+            </div>
           </div>
+          <div class="panel-section">
+            <h3>Functions</h3>
+            <div class="action-list">
+              <button id="btn-rotate" class="action-item" disabled>
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                Rotate 90&deg;
+              </button>
+              <button id="btn-contrast" class="action-item" disabled>
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 18a6 6 0 0 0 0-12v12z"></path></svg>
+                Contrast Enhance
+              </button>
+              <button id="btn-binarize" class="action-item" disabled>
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                Binarize (Otsu)
+              </button>
+              <button id="btn-undo-binarize" class="action-item hidden">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4v6h6"></path><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+                Undo Binarize
+              </button>
+              <button id="btn-trim-mode" class="action-item" disabled>
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 13V6a2 2 0 0 1 2-2h7"></path><path d="M18 11v7a2 2 0 0 1-2 2H9"></path><polyline points="1 20 23 2"></polyline></svg>
+                Trim ROI
+              </button>
+            </div>
+          </div>
+          <div id="image-info" class="info-box"></div>
         </div>
-        <div id="image-info" class="info-box"></div>
       </section>
 
       <!-- Vectorization Panel -->
       <section id="panel-vectorization" class="panel">
-        <div class="panel-section">
-          <h3>Define Scale</h3>
-          <div class="radio-group">
-            <label>
-              <input type="radio" name="scale-method" value="timemarks" checked />
-              Time-marks
-            </label>
-            <label>
-              <input type="radio" name="scale-method" value="corners" />
-              Corner values
-            </label>
-          </div>
-          <button id="btn-pick-timemarks" class="btn" disabled>Pick Time-marks</button>
-          <div id="corner-inputs" class="hidden">
-            <div class="form-row">
-              <label>Left X:</label><input type="number" id="corner-left-x" step="any" />
-            </div>
-            <div class="form-row">
-              <label>Top Y:</label><input type="number" id="corner-up-y" step="any" />
-            </div>
-            <div class="form-row">
-              <label>Right X:</label><input type="number" id="corner-right-x" step="any" />
-            </div>
-            <div class="form-row">
-              <label>Bottom Y:</label><input type="number" id="corner-down-y" step="any" />
-            </div>
-            <button id="btn-set-corners" class="btn">Set Corners</button>
-          </div>
+        <div class="panel-header">
+          <h2>Vectorization</h2>
         </div>
-        <div class="panel-section">
-          <h3>Digitize</h3>
-          <button id="btn-vectorize" class="btn btn-primary" disabled>Start Vectorizing</button>
-          <button id="btn-show-canvas-vec" class="btn hidden">Show Canvas</button>
-          <button id="btn-clear-points" class="btn btn-danger" disabled>Clear Points</button>
-          <span id="point-count" class="badge">0 points</span>
-        </div>
-        <div class="panel-section">
-          <button id="btn-plot-preview" class="btn" disabled>Plot Preview</button>
-          <button id="btn-export-ascii" class="btn" disabled>Export ASCII</button>
+        <div class="panel-scroll">
+          <div class="panel-section">
+            <h3>Scale Definition</h3>
+            <div class="action-list">
+              <button id="btn-set-scale" class="action-item" disabled>
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="12" x2="22" y2="12"></line><line x1="7" y1="7" x2="7" y2="17"></line><line x1="17" y1="7" x2="17" y2="17"></line></svg>
+                Set Scale Method
+              </button>
+            </div>
+            <div id="scale-status" class="status-badge scale-status hidden"></div>
+          </div>
+          <div class="panel-section">
+            <h3>Trace Digitization</h3>
+            <div class="action-list">
+              <button id="btn-vectorize" class="action-item primary" disabled>
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20v-8m0 0V4m0 8h8m-8 0H4"></path></svg>
+                Start Vectorizing
+              </button>
+              <button id="btn-clear-points" class="action-item danger" disabled>
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                Clear All Points
+              </button>
+            </div>
+            <div class="status-badge">
+              <span id="point-count">0</span> points collected
+            </div>
+          </div>
+          <div class="panel-section">
+            <h3>Review & Export</h3>
+            <div class="action-list">
+              <button id="btn-plot-preview" class="action-item" disabled>
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="M18 9l-5 5-2-2-4 4"></path></svg>
+                Plot Preview
+              </button>
+              <button id="btn-export-ascii" class="action-item" disabled>
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                Export ASCII
+              </button>
+            </div>
+          </div>
         </div>
       </section>
 
       <!-- Corrections Panel -->
       <section id="panel-corrections" class="panel">
-        <div class="panel-section">
-          <h3>Load Data</h3>
-          <input type="file" id="data-upload" accept=".txt,.dat,.asc" />
-          <button id="btn-upload-data" class="btn btn-primary" disabled>Upload Data</button>
+        <div class="panel-header">
+          <h2>Corrections</h2>
         </div>
-        <div class="panel-section">
-          <h3>Apply Corrections</h3>
-          <button id="btn-polarity" class="btn" disabled>Invert Polarity</button>
-
-          <div class="form-row">
-            <label>Window (s):</label>
-            <input type="number" id="detrend-window" value="60" min="1" />
+        <div class="panel-scroll">
+          <div class="panel-section">
+            <h3>Data Source</h3>
+            <div class="upload-zone" id="data-drop-zone">
+              <input type="file" id="data-upload" accept=".txt,.dat,.asc" class="hidden" />
+              <label for="data-upload" class="upload-label">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+                <span>Upload External Data</span>
+              </label>
+            </div>
+            <button id="btn-upload-data" class="btn btn-sm hidden">Manual Upload</button>
           </div>
-          <button id="btn-detrend" class="btn" disabled>Detrend</button>
-
-          <details class="collapsible">
-            <summary>Curvature Correction</summary>
-            <div class="form-row">
-              <label>Drum speed (mm/s):</label>
-              <input type="number" id="curv-speed" step="any" />
+          <div class="panel-section">
+            <h3>Process</h3>
+            <div class="action-list">
+              <button id="btn-polarity" class="action-item" disabled>Invert Polarity</button>
+              <button id="btn-detrend" class="action-item" disabled>Detrend...</button>
+              <button id="btn-curvature" class="action-item" disabled>Curvature...</button>
+              <button id="btn-resample" class="action-item" disabled>Resample...</button>
+              <button id="btn-wiechert" class="action-item" disabled>Wiechert Resp...</button>
             </div>
-            <div class="form-row">
-              <label>Stylet length (mm):</label>
-              <input type="number" id="curv-stylet" step="any" />
-            </div>
-            <div class="form-row">
-              <label>Inflection amp:</label>
-              <input type="number" id="curv-inflection" step="any" />
-            </div>
-            <div class="form-row">
-              <label>SPS:</label>
-              <input type="number" id="curv-sps" value="100" min="1" />
-            </div>
-            <div class="form-row">
-              <label>Spline order:</label>
-              <select id="curv-spline">
-                <option value="slinear">Linear</option>
-                <option value="quadratic">Quadratic</option>
-                <option value="cubic" selected>Cubic</option>
+          </div>
+          <div class="panel-section">
+            <h3>Standard Export</h3>
+            <div class="form-group">
+              <label>Data:</label>
+              <select id="export-data-type" class="form-select">
+                <option value="detrend">Detrended</option>
+                <option value="curvature_ga">Curvature (G&A94)</option>
+                <option value="curvature_ls">Curvature (LS)</option>
+                <option value="resampled" selected>Resampled</option>
+                <option value="response">Instrument Response</option>
               </select>
             </div>
-            <button id="btn-curvature" class="btn" disabled>Apply Curvature</button>
-          </details>
-
-          <details class="collapsible">
-            <summary>Resample Only</summary>
-            <div class="form-row">
-              <label>SPS:</label>
-              <input type="number" id="resample-sps" value="100" min="1" />
-            </div>
-            <div class="form-row">
-              <label>Spline order:</label>
-              <select id="resample-spline">
-                <option value="slinear">Linear</option>
-                <option value="quadratic">Quadratic</option>
-                <option value="cubic" selected>Cubic</option>
+            <div class="form-group">
+              <label>Format:</label>
+              <select id="export-format" class="form-select">
+                <option value="ascii">ASCII (.txt)</option>
+                <option value="sac">SAC (.sac)</option>
+                <option value="miniseed">MiniSEED (.mseed)</option>
               </select>
             </div>
-            <button id="btn-resample" class="btn" disabled>Resample</button>
-          </details>
-
-          <details class="collapsible">
-            <summary>Wiechert Response</summary>
-            <div class="form-row">
-              <label>Period T0 (s):</label>
-              <input type="number" id="wiechert-t0" step="any" />
-            </div>
-            <div class="form-row">
-              <label>Damping &epsilon;:</label>
-              <input type="number" id="wiechert-epsilon" step="any" />
-            </div>
-            <div class="form-row">
-              <label>Magnification V0:</label>
-              <input type="number" id="wiechert-v0" step="1" />
-            </div>
-            <div class="form-row">
-              <label>Water level:</label>
-              <input type="number" id="wiechert-wl" value="0.01" min="0" max="1" step="0.01" />
-            </div>
-            <div class="radio-group">
-              <label><input type="radio" name="wiechert-mode" value="remove" checked /> Remove</label>
-              <label><input type="radio" name="wiechert-mode" value="add" /> Add</label>
-            </div>
-            <button id="btn-wiechert" class="btn" disabled>Apply Wiechert</button>
-          </details>
-        </div>
-        <div class="panel-section">
-          <h3>Export Corrected Data</h3>
-          <select id="export-data-type">
-            <option value="detrend">Detrended</option>
-            <option value="curvature_ga">Curvature (G&A94)</option>
-            <option value="curvature_ls">Curvature (LS)</option>
-            <option value="resampled" selected>Resampled</option>
-            <option value="response">Instrument Response</option>
-          </select>
-          <select id="export-format">
-            <option value="ascii">ASCII</option>
-            <option value="sac">SAC</option>
-            <option value="miniseed">MINISEED</option>
-          </select>
-          <button id="btn-export-corrected" class="btn" disabled>Download</button>
+            <button id="btn-export-corrected" class="action-item primary" disabled>
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              Download File
+            </button>
+          </div>
         </div>
       </section>
     </aside>
 
     <!-- Center: Workspace -->
     <div class="workspace">
+
       <!-- Workspace Navigation/Tabs -->
       <div class="workspace-tabs" id="workspace-tabs">
         <button class="workspace-tab active" data-target="canvas-view">Image Canvas</button>
         <button class="workspace-tab" data-target="plot-view">Plot Preview</button>
-        <div class="workspace-controls" style="margin-left: auto;">
+        <span id="workspace-filename" class="workspace-filename"></span>
+        <div class="workspace-controls">
           <button id="btn-maximize-canvas" class="btn btn-primary btn-sm">Maximize</button>
         </div>
       </div>
@@ -251,7 +250,7 @@
       <div id="info-log" class="info-log"></div>
     </aside>
   </main>
-
+  
   <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

@@ -16,6 +16,7 @@ class AppState {
   imageWidth = 0;
   imageHeight = 0;
   ppi: number | null = null;
+  recentSessions: any[] = [];
 
   private listeners: Listener[] = [];
 

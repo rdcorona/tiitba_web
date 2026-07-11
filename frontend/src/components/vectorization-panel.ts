@@ -11,57 +11,88 @@ import {
 } from './canvas-viewer';
 import { plotTraces } from './plot-viewer';
 import { registerKey, unregisterKey } from '../utils/keyboard';
+import { Modal, showParameterModal } from './modal';
+
+const HIDE_VECTORIZE_INSTRUCTIONS_KEY = 'tiitba_hide_vectorize_instructions';
 
 let timemarkPoints: { x: number; y: number }[] = [];
 let isPickingTimemarks = false;
 
+// Serializes add/remove/clear point requests so they reach the backend in
+// the exact order the user triggered them (see startVectorizing()).
+let pointOpQueue: Promise<void> = Promise.resolve();
+
 export function initVectorizationPanel() {
-  const btnPickTm = document.getElementById('btn-pick-timemarks') as HTMLButtonElement;
-  const btnSetCorners = document.getElementById('btn-set-corners') as HTMLButtonElement;
+  const btnSetScale = document.getElementById('btn-set-scale') as HTMLButtonElement;
   const btnVectorize = document.getElementById('btn-vectorize') as HTMLButtonElement;
-  const btnShowCanvasVec = document.getElementById('btn-show-canvas-vec') as HTMLButtonElement;
   const btnClear = document.getElementById('btn-clear-points') as HTMLButtonElement;
   const btnPlot = document.getElementById('btn-plot-preview') as HTMLButtonElement;
   const btnExport = document.getElementById('btn-export-ascii') as HTMLButtonElement;
-  const cornerInputs = document.getElementById('corner-inputs')!;
   const pointCount = document.getElementById('point-count')!;
-
-  // Scale method radio
-  document.querySelectorAll('input[name="scale-method"]').forEach(radio => {
-    radio.addEventListener('change', (e) => {
-      const val = (e.target as HTMLInputElement).value;
-      cornerInputs.classList.toggle('hidden', val !== 'corners');
-      btnPickTm.classList.toggle('hidden', val !== 'timemarks');
-    });
-  });
+  const scaleStatus = document.getElementById('scale-status');
 
   // State listener to enable/disable buttons
   state.subscribe(() => {
-    btnPickTm.disabled = !state.hasImage;
-    btnVectorize.disabled = !state.hasImage;
+    const scaleReady = state.hasImage && !!state.ppi;
+    if (btnSetScale) {
+      btnSetScale.disabled = !scaleReady && !isPickingTimemarks;
+      btnSetScale.title = scaleReady
+        ? ''
+        : state.hasImage ? 'Set a PPI value for this image first' : 'Upload an image first';
+    }
+    btnVectorize.disabled = !scaleReady;
     btnClear.disabled = state.localPoints.length === 0;
     btnPlot.disabled = state.localPoints.length === 0;
     btnExport.disabled = state.localPoints.length === 0;
-    pointCount.textContent = `${state.localPoints.length} points`;
-    if (state.hasImage) {
-      btnShowCanvasVec.classList.remove('hidden');
-    }
+    pointCount.textContent = `${state.localPoints.length}`;
   });
 
-  btnShowCanvasVec.addEventListener('click', showCanvasModal);
-
-  // --- Timemark Picking ---
-  btnPickTm.addEventListener('click', () => {
-    showCanvasModal();
+  // --- Scale Definition ---
+  btnSetScale?.addEventListener('click', () => {
     if (isPickingTimemarks) {
       finishTimemarkPicking();
       return;
     }
+
+    showParameterModal('Define Scale Method', [
+      { name: 'method', label: 'Method:', type: 'select', value: 'timemarks', options: [
+        { label: 'Time-marks (drum speed)', value: 'timemarks' },
+        { label: 'Corner values (absolute)', value: 'corners' }
+      ]}
+    ], (data) => {
+      if (data.method === 'timemarks') {
+        startTimemarkPicking();
+      } else {
+        showCornersModal();
+      }
+    });
+  });
+
+  function showCornersModal() {
+    showParameterModal('Set Corner Values', [
+      { name: 'leftX', label: 'Left X (time):', type: 'number', value: 0 },
+      { name: 'upY', label: 'Top Y (amp):', type: 'number', value: 100 },
+      { name: 'rightX', label: 'Right X (time):', type: 'number', value: 3600 },
+      { name: 'downY', label: 'Bottom Y (amp):', type: 'number', value: -100 }
+    ], async (data) => {
+      try {
+        await api.setCorners(state.sessionId, data.leftX, data.upY, data.rightX, data.downY);
+        state.hasScale = true;
+        log(`Corners set: X=[${data.leftX}, ${data.rightX}] Y=[${data.upY}, ${data.downY}]`, 'success');
+        setScaleStatus(`Corners &middot; X=[${data.leftX}, ${data.rightX}] Y=[${data.upY}, ${data.downY}]`);
+        state.notify();
+      } catch (e: any) { log(`Set corners failed: ${e.message}`, 'error'); }
+    });
+  }
+
+  // --- Timemark Picking ---
+  function startTimemarkPicking() {
+    showCanvasModal();
     isPickingTimemarks = true;
     timemarkPoints = [];
     state.currentMode = 'timemarks';
     state.localPoints.length = 0;
-    btnPickTm.textContent = 'Finish Picking';
+    if (btnSetScale) btnSetScale.textContent = 'Finish Picking';
     log('Click on 3+ time-marks (60s apart). Press Finish when done.', 'info');
 
     setPointClickHandler((imgX, imgY) => {
@@ -72,12 +103,12 @@ export function initVectorizationPanel() {
     });
 
     state.notify();
-  });
+  }
 
   async function finishTimemarkPicking() {
     isPickingTimemarks = false;
     state.currentMode = 'view';
-    btnPickTm.textContent = 'Pick Time-marks';
+    if (btnSetScale) btnSetScale.textContent = 'Define Scale';
 
     if (timemarkPoints.length < 3) {
       log('Need at least 3 time-marks', 'error');
@@ -86,13 +117,20 @@ export function initVectorizationPanel() {
       return;
     }
 
+    if (!state.ppi) {
+      log('Cannot compute drum speed: no PPI set for this image. Set a PPI value first.', 'error');
+      clearOverlay();
+      state.notify();
+      return;
+    }
+
     try {
       const pts = timemarkPoints.map(p => [p.x, p.y]);
-      const ppi = state.ppi || 600;
-      const result = await api.setTimemarks(state.sessionId, pts, ppi);
+      const result = await api.setTimemarks(state.sessionId, pts, state.ppi);
       state.hasScale = true;
       log(`Drum speed: ${result.drum_speed.toFixed(4)} mm/s`, 'success');
       log(`Baseline amplitude: ${result.amp0.toFixed(2)} mm`, 'info');
+      setScaleStatus(`Time-marks &middot; Drum speed: ${result.drum_speed.toFixed(4)} mm/s &middot; Baseline: ${result.amp0.toFixed(2)} mm`);
     } catch (e: any) {
       log(`Timemark calculation failed: ${e.message}`, 'error');
     }
@@ -101,71 +139,114 @@ export function initVectorizationPanel() {
     state.notify();
   }
 
-  // --- Corner Values ---
-  btnSetCorners.addEventListener('click', async () => {
-    showCanvasModal();
-    const leftX = parseFloat((document.getElementById('corner-left-x') as HTMLInputElement).value);
-    const upY = parseFloat((document.getElementById('corner-up-y') as HTMLInputElement).value);
-    const rightX = parseFloat((document.getElementById('corner-right-x') as HTMLInputElement).value);
-    const downY = parseFloat((document.getElementById('corner-down-y') as HTMLInputElement).value);
-
-    if ([leftX, upY, rightX, downY].some(isNaN)) {
-      log('All corner values are required', 'error');
-      return;
+  function setScaleStatus(text: string) {
+    if (scaleStatus) {
+      scaleStatus.innerHTML = `<span class="status-dot"></span> ${text}`;
+      scaleStatus.classList.remove('hidden');
     }
-
-    try {
-      await api.setCorners(state.sessionId, leftX, upY, rightX, downY);
-      state.hasScale = true;
-      log(`Corners set: X=[${leftX}, ${rightX}] Y=[${upY}, ${downY}]`, 'success');
-      state.notify();
-    } catch (e: any) {
-      log(`Set corners failed: ${e.message}`, 'error');
-    }
-  });
+  }
 
   // --- Vectorize Mode ---
   btnVectorize.addEventListener('click', () => {
     if (state.isVectorizing) {
       stopVectorizing();
-    } else {
+    } else if (localStorage.getItem(HIDE_VECTORIZE_INSTRUCTIONS_KEY) === '1') {
       startVectorizing();
+    } else {
+      showVectorizeInstructions(startVectorizing);
     }
   });
+
+  function showVectorizeInstructions(onProceed: () => void) {
+    const container = document.createElement('div');
+
+    const text = document.createElement('p');
+    text.className = 'modal-warning-text';
+    text.innerHTML =
+      'Click along the trace to mark points, from left to right.<br>' +
+      '&bull; Press <strong>Z</strong> to undo the last point.<br>' +
+      '&bull; Press <strong>Esc</strong> (or the Stop button) to finish.<br>' +
+      'Points are saved to the session as you click.';
+    container.appendChild(text);
+
+    const checkGroup = document.createElement('label');
+    checkGroup.className = 'modal-checkbox-row';
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.name = 'dontShowAgain';
+    checkGroup.appendChild(checkbox);
+    checkGroup.appendChild(document.createTextNode("Don't show this again"));
+    container.appendChild(checkGroup);
+
+    const modal = new Modal({
+      title: 'Vectorizing Instructions',
+      content: container,
+      confirmText: 'Start Vectorizing',
+      cancelText: 'Cancel',
+      onConfirm: (data) => {
+        if (data.dontShowAgain) localStorage.setItem(HIDE_VECTORIZE_INSTRUCTIONS_KEY, '1');
+        onProceed();
+      },
+    });
+    modal.show();
+  }
 
   function startVectorizing() {
     showCanvasModal();
     state.isVectorizing = true;
     state.currentMode = 'vectorize';
-    btnVectorize.textContent = 'Stop Vectorizing';
+    btnVectorize.classList.add('active');
+    btnVectorize.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="9" x2="15" y2="15"></line><line x1="15" y1="9" x2="9" y2="15"></line></svg> Stop Vectorizing`;
     log('Click to mark points. Z=undo, Esc=stop', 'info');
 
-    setPointClickHandler(async (imgX, imgY) => {
+    setPointClickHandler((imgX, imgY) => {
       // Optimistic render
-      state.localPoints.push({ x: imgX, y: imgY });
+      const optimisticPoint = { x: imgX, y: imgY };
+      state.localPoints.push(optimisticPoint);
       refreshOverlay();
-
-      try {
-        const result = await api.addPoint(state.sessionId, imgX, imgY);
-        log(`Point ${result.index}: t=${result.time_or_x.toFixed(3)}, a=${result.amplitude_or_y.toFixed(3)}`, '');
-        pointCount.textContent = `${state.localPoints.length} points`;
-      } catch (e: any) {
-        // Revert optimistic add
-        state.localPoints.pop();
-        refreshOverlay();
-        log(`Add point failed: ${e.message}`, 'error');
-      }
       state.notify();
+
+      // Queue the backend call behind any pending point operation so that
+      // add/undo requests are applied in the exact order the user triggered
+      // them, even if the user clicks or presses undo faster than the
+      // network round-trip. Without this, out-of-order responses could make
+      // the backend's point list (used for the plot/export) diverge from
+      // what is shown on the canvas.
+      pointOpQueue = pointOpQueue.then(async () => {
+        try {
+          const result = await api.addPoint(state.sessionId, imgX, imgY);
+          log(`Point ${result.index}: t=${result.time_or_x.toFixed(3)}, a=${result.amplitude_or_y.toFixed(3)}`, '');
+        } catch (e: any) {
+          // Revert this specific optimistic point (by reference, since other
+          // points may have been added/removed while this call was queued)
+          const idx = state.localPoints.indexOf(optimisticPoint);
+          if (idx !== -1) state.localPoints.splice(idx, 1);
+          refreshOverlay();
+          log(`Add point failed: ${e.message}`, 'error');
+        }
+        state.notify();
+      });
     });
 
-    registerKey('z', async () => {
+    registerKey('z', () => {
       if (state.localPoints.length === 0) return;
+      const removedPoint = state.localPoints[state.localPoints.length - 1];
       removeLastOverlayPoint();
-      try {
-        await api.removeLastPoint(state.sessionId);
-        log('Undid last point', '');
-      } catch (e: any) { log(`Undo failed: ${e.message}`, 'error'); }
       state.notify();
+
+      pointOpQueue = pointOpQueue.then(async () => {
+        try {
+          await api.removeLastPoint(state.sessionId);
+          log('Undid last point', '');
+        } catch (e: any) {
+          // Backend removal failed (or was already out of sync) - restore
+          // the point locally so the canvas matches the backend again.
+          state.localPoints.push(removedPoint);
+          refreshOverlay();
+          log(`Undo failed: ${e.message}`, 'error');
+        }
+        state.notify();
+      });
     });
 
     registerKey('escape', () => stopVectorizing());
@@ -184,13 +265,17 @@ export function initVectorizationPanel() {
   }
 
   // --- Clear ---
-  btnClear.addEventListener('click', async () => {
-    try {
-      await api.clearPoints(state.sessionId);
-      clearOverlay();
-      log('All points cleared', '');
+  btnClear.addEventListener('click', () => {
+    // Queued behind any pending add/undo so a slow in-flight request can't
+    // land after the clear and resurrect a point on the backend.
+    pointOpQueue = pointOpQueue.then(async () => {
+      try {
+        await api.clearPoints(state.sessionId);
+        clearOverlay();
+        log('All points cleared', '');
+      } catch (e: any) { log(`Clear failed: ${e.message}`, 'error'); }
       state.notify();
-    } catch (e: any) { log(`Clear failed: ${e.message}`, 'error'); }
+    });
   });
 
   // --- Plot Preview ---

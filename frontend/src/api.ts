@@ -16,6 +16,15 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
 
 // --- Sessions ---
 
+export interface SessionHistoryEntry {
+  session_id: string;
+  timestamp: number;
+  imagefile_name: string | null;
+  datafile_name: string | null;
+  point_count: number;
+  has_image: boolean;
+}
+
 export async function createSession(): Promise<{ session_id: string }> {
   return request('/sessions', { method: 'POST' });
 }
@@ -28,12 +37,32 @@ export async function getSessionInfo(sid: string) {
     has_data: boolean;
     has_scale: boolean;
     scale_mode: string | null;
+    imagefile_name: string | null;
+    datafile_name: string | null;
     point_count: number;
   }>(`/sessions/${sid}`);
 }
 
 export async function deleteSession(sid: string) {
   return request(`/sessions/${sid}`, { method: 'DELETE' });
+}
+
+export async function getSessionHistory(): Promise<SessionHistoryEntry[]> {
+  return request('/sessions/history');
+}
+
+export async function persistSession(sid: string) {
+  return request(`/sessions/${sid}/persist`, { method: 'POST' });
+}
+
+export async function restoreSession(sid: string, sourceSid: string) {
+  return request(`/sessions/${sid}/restore/${sourceSid}`, { method: 'POST' });
+}
+
+export async function updatePPI(sid: string, ppi: number) {
+  return request<{ ppi: number; width_mm: number; height_mm: number }>(
+    `/sessions/${sid}/ppi?ppi=${ppi}`, { method: 'PATCH' }
+  );
 }
 
 // --- Images ---
@@ -45,6 +74,7 @@ export async function uploadImage(sid: string, file: File, ppi?: number) {
   return request<{
     filename: string;
     ppi: number | null;
+    ppi_required: boolean;
     width: number;
     height: number;
     width_mm: number | null;
@@ -141,6 +171,12 @@ export async function clearPoints(sid: string) {
   return request(`/sessions/${sid}/points`, { method: 'DELETE' });
 }
 
+export async function getPoints(sid: string) {
+  return request<{ points: [number, number][]; count: number }>(
+    `/sessions/${sid}/points`
+  );
+}
+
 export async function getPlotData(sid: string) {
   return request<{
     time: number[]; amplitude: number[];
@@ -155,6 +191,12 @@ export async function uploadData(sid: string, file: File) {
   form.append('file', file);
   return request<{ n_samples: number; time_range: number[]; filename: string }>(
     `/sessions/${sid}/data/upload`, { method: 'POST', body: form }
+  );
+}
+
+export async function autoLoadData(sid: string) {
+  return request<{ n_samples: number; time_range: number[]; filename: string } | null>(
+    `/sessions/${sid}/data/auto-load`
   );
 }
 
@@ -211,6 +253,10 @@ export async function wiechertResponse(
 
 // --- Export ---
 
-export function getExportUrl(sid: string, format: string, dataType: string): string {
-  return `${BASE}/sessions/${sid}/export/${format}?data=${dataType}`;
+export function getExportUrl(sid: string, format: string, dataType: string, metadata: any = {}): string {
+  let url = `${BASE}/sessions/${sid}/export/${format}?data=${dataType}`;
+  for (const [key, value] of Object.entries(metadata)) {
+    if (value) url += `&${key}=${encodeURIComponent(value as string)}`;
+  }
+  return url;
 }

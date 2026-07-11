@@ -117,49 +117,55 @@ function drawImage() {
 function drawOverlay() {
   overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
 
-  const points = state.localPoints;
-  if (points.length === 0) return;
-
   const ds = state.displayScale;
   const mode = state.currentMode;
-  const color = mode === 'timemarks' ? '#4caf50' : '#e94560';
+  const points = state.localPoints;
 
-  // Draw connecting lines
-  if (points.length > 1 && mode === 'vectorize') {
-    overlayCtx.beginPath();
-    overlayCtx.strokeStyle = color;
-    overlayCtx.lineWidth = 1;
-    const first = imageToDisplay(points[0].x, points[0].y, transform, ds);
-    overlayCtx.moveTo(first.x, first.y);
-    for (let i = 1; i < points.length; i++) {
-      const p = imageToDisplay(points[i].x, points[i].y, transform, ds);
-      overlayCtx.lineTo(p.x, p.y);
+  if (points.length > 0) {
+    const color = mode === 'timemarks' ? '#4caf50' : '#e94560';
+
+    // Draw connecting lines
+    if (points.length > 1 && mode === 'vectorize') {
+      overlayCtx.beginPath();
+      overlayCtx.strokeStyle = color;
+      overlayCtx.lineWidth = 1;
+      const first = imageToDisplay(points[0].x, points[0].y, transform, ds);
+      overlayCtx.moveTo(first.x, first.y);
+      for (let i = 1; i < points.length; i++) {
+        const p = imageToDisplay(points[i].x, points[i].y, transform, ds);
+        overlayCtx.lineTo(p.x, p.y);
+      }
+      overlayCtx.stroke();
     }
-    overlayCtx.stroke();
+
+    // Draw points
+    for (const pt of points) {
+      const dp = imageToDisplay(pt.x, pt.y, transform, ds);
+      overlayCtx.beginPath();
+      overlayCtx.arc(dp.x, dp.y, 4, 0, Math.PI * 2);
+      overlayCtx.fillStyle = color;
+      overlayCtx.fill();
+      overlayCtx.strokeStyle = '#fff';
+      overlayCtx.lineWidth = 1;
+      overlayCtx.stroke();
+    }
   }
 
-  // Draw points
-  for (const pt of points) {
-    const dp = imageToDisplay(pt.x, pt.y, transform, ds);
-    overlayCtx.beginPath();
-    overlayCtx.arc(dp.x, dp.y, 4, 0, Math.PI * 2);
-    overlayCtx.fillStyle = color;
-    overlayCtx.fill();
-    overlayCtx.strokeStyle = '#fff';
-    overlayCtx.lineWidth = 1;
-    overlayCtx.stroke();
-  }
-
-  // Draw trim rectangle
+  // Draw trim rectangle (always, independent of vectorization points)
   if (trimRect) {
     const tl = imageToDisplay(trimRect.x, trimRect.y, transform, ds);
     const br = imageToDisplay(
       trimRect.x + trimRect.w, trimRect.y + trimRect.h, transform, ds,
     );
-    overlayCtx.strokeStyle = '#ff0';
+    const rx = tl.x, ry = tl.y, rw = br.x - tl.x, rh = br.y - tl.y;
+
+    overlayCtx.fillStyle = 'rgba(255, 145, 0, 0.18)';
+    overlayCtx.fillRect(rx, ry, rw, rh);
+
+    overlayCtx.strokeStyle = '#ff9100';
     overlayCtx.lineWidth = 2;
-    overlayCtx.setLineDash([5, 5]);
-    overlayCtx.strokeRect(tl.x, tl.y, br.x - tl.x, br.y - tl.y);
+    overlayCtx.setLineDash([6, 4]);
+    overlayCtx.strokeRect(rx, ry, rw, rh);
     overlayCtx.setLineDash([]);
   }
 }
