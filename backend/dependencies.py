@@ -4,6 +4,7 @@ FastAPI dependency injection functions.
 
 from fastapi import HTTPException
 
+from backend.config import settings
 from backend.session import SessionManager, SessionState
 
 # Singleton session manager (initialized in main.py lifespan)
@@ -12,7 +13,7 @@ _manager: SessionManager | None = None
 
 def init_session_manager(ttl: int) -> SessionManager:
     global _manager
-    _manager = SessionManager(ttl_seconds=ttl)
+    _manager = SessionManager(ttl_seconds=ttl, storage_dir=settings.storage_dir)
     return _manager
 
 

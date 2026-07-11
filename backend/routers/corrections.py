@@ -19,6 +19,7 @@ from backend.schemas import (
 )
 from backend.core import corrections as cf
 from backend.core import io as tio
+from backend.core import vectorization as vec
 
 router = APIRouter(tags=["corrections"])
 
@@ -60,6 +61,51 @@ async def upload_data(
         raise HTTPException(400, f"Failed to parse data file: {e}")
     finally:
         Path(tmp_path).unlink(missing_ok=True)
+
+
+@router.get("/sessions/{sid}/data/auto-load", response_model=DataUploaded | None)
+async def auto_load_data(
+    sid: str,
+    session: SessionState = Depends(get_session),
+):
+    """Check if data is already in session (ASCII upload or vectorized points) and return its info."""
+    if session.amp is not None and session.treg is not None:
+        return DataUploaded(
+            n_samples=len(session.amp),
+            time_range=[float(session.treg.min()), float(session.treg.max())],
+            filename=session.datafile_name or "in-memory",
+        )
+
+    # No ASCII data uploaded yet: bridge digitized points into a time series
+    # if a scale has already been defined for them.
+    if session.points and len(session.points) >= 2:
+        if session.scale_mode == "timemarks" and session.vr is not None:
+            t, a = vec.pixels_to_timemarks(
+                session.points, session.ppi, session.vr,
+                session.amp0, session.imheight_mm,
+            )
+        elif session.scale_mode == "corners" and session.x_values is not None:
+            h, w = session.img.shape[:2]
+            t, a = vec.pixels_to_corners(
+                session.points, session.x_values, session.y_values, w, h,
+            )
+        else:
+            return None
+
+        order = np.argsort(t)
+        t, a = t[order], a[order]
+
+        session.treg = t
+        session.amp = a
+        session.datafile_name = session.datafile_name or session.imagefile_name or "vectorized points"
+
+        return DataUploaded(
+            n_samples=len(a),
+            time_range=[float(t.min()), float(t.max())],
+            filename=session.datafile_name,
+        )
+
+    return None
 
 
 @router.get("/sessions/{sid}/data/plot", response_model=PlotTraces)

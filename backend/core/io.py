@@ -69,7 +69,13 @@ def build_sac_header(station, channel, delta, network='', starttime=None):
         header.network = network
     if starttime is not None:
         if isinstance(starttime, str):
-            header.starttime = UTCDateTime(starttime)
+            try:
+                header.starttime = UTCDateTime(starttime)
+            except Exception as e:
+                raise ValueError(
+                    f"Invalid start time '{starttime}': expected a format like "
+                    f"'YYYY-MM-DD HH:MM:SS' ({e})"
+                )
         else:
             header.starttime = starttime
     return header

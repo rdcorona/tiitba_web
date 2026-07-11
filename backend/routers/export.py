@@ -63,13 +63,16 @@ async def export_sac(
         raise HTTPException(400, "Data must be resampled before SAC export (uniform sampling required)")
 
     delta = 1.0 / session.sps
-    header = tio.build_sac_header(
-        station=station or "STA",
-        channel=channel or "HHZ",
-        delta=delta,
-        network=network,
-        starttime=starttime,
-    )
+    try:
+        header = tio.build_sac_header(
+            station=station or "STA",
+            channel=channel or "HHZ",
+            delta=delta,
+            network=network,
+            starttime=starttime,
+        )
+    except ValueError as e:
+        raise HTTPException(400, str(e))
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".sac") as tmp:
         tmp_path = tmp.name
@@ -103,13 +106,16 @@ async def export_miniseed(
         raise HTTPException(400, "Data must be resampled before MINISEED export")
 
     delta = 1.0 / session.sps
-    header = tio.build_sac_header(
-        station=station or "STA",
-        channel=channel or "HHZ",
-        delta=delta,
-        network=network,
-        starttime=starttime,
-    )
+    try:
+        header = tio.build_sac_header(
+            station=station or "STA",
+            channel=channel or "HHZ",
+            delta=delta,
+            network=network,
+            starttime=starttime,
+        )
+    except ValueError as e:
+        raise HTTPException(400, str(e))
     trace = tio.create_trace(a, header)
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".mseed") as tmp:

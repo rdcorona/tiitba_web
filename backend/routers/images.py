@@ -61,6 +61,7 @@ async def upload_image(
         return ImageUploaded(
             filename=file.filename or "unknown",
             ppi=session.ppi,
+            ppi_required=session.ppi is None,
             width=w,
             height=h,
             width_mm=dims['width_mm'] if dims else None,
@@ -68,6 +69,23 @@ async def upload_image(
         )
     finally:
         Path(tmp_path).unlink(missing_ok=True)
+
+
+@router.patch("/sessions/{sid}/ppi", response_model=ImageInfo)
+async def update_ppi(
+    sid: str,
+    ppi: float,
+    session: SessionState = Depends(get_session),
+):
+    """Update PPI and recalculate dimensions."""
+    if session.img is None:
+        raise HTTPException(400, "No image loaded")
+    
+    session.ppi = ppi
+    dims = imgproc.get_dimensions(session.img, session.ppi)
+    session.imheight_mm = dims['height_mm']
+    
+    return ImageInfo(ppi=session.ppi, **dims)
 
 
 @router.get("/sessions/{sid}/image")

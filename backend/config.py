@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     display_image_max_dim: int = 4000
     jpeg_quality: int = 85
     cors_origins: list[str] = ["http://localhost:5173"]
+    storage_dir: str = "storage"
 
     class Config:
         env_prefix = "TIITBA_"

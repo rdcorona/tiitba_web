@@ -73,6 +73,12 @@ async def create_session():
     return SessionCreated(session_id=session.id)
 
 
+@app.get("/api/sessions/history")
+async def get_session_history():
+    manager = get_session_manager()
+    return manager.get_history()
+
+
 @app.get("/api/sessions/{sid}", response_model=SessionSummary)
 async def get_session_info(session: SessionState = Depends(get_session)):
     return SessionSummary(
@@ -86,6 +92,23 @@ async def get_session_info(session: SessionState = Depends(get_session)):
         datafile_name=session.datafile_name,
         point_count=len(session.points),
     )
+
+
+@app.post("/api/sessions/{sid}/persist")
+async def persist_session(sid: str):
+    manager = get_session_manager()
+    manager.persist(sid)
+    return {"persisted": True}
+
+
+@app.post("/api/sessions/{sid}/restore/{source_sid}")
+async def restore_session(sid: str, source_sid: str):
+    manager = get_session_manager()
+    session = manager.restore(sid, source_sid)
+    if not session:
+        from fastapi import HTTPException
+        raise HTTPException(404, "Source session not found on disk")
+    return {"restored": True}
 
 
 @app.delete("/api/sessions/{sid}")

@@ -34,10 +34,11 @@ class ImageInfo(BaseModel):
 class ImageUploaded(BaseModel):
     filename: str
     ppi: float | None
+    ppi_required: bool = False
     width: int
     height: int
-    width_mm: float | None
-    height_mm: float | None
+    width_mm: float | None = None
+    height_mm: float | None = None
 
 class ImageDimensions(BaseModel):
     width: int
