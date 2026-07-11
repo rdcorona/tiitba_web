@@ -11,7 +11,8 @@ All functions are pure (no UI dependencies) and operate on numpy arrays.
 import time as _time
 
 import numpy as np
-from scipy.interpolate import InterpolatedUnivariateSpline
+from scipy.interpolate import InterpolatedUnivariateSpline, PchipInterpolator
+from scipy.optimize import isotonic_regression
 import obspy.signal.interpolation as osi
 
 
@@ -29,10 +30,9 @@ def detrend(t, a, ntrv=60):
     :returns: (t, amp1) detrended time and amplitude arrays
     :rtype: tuple(np.ndarray, np.ndarray)
     """
-    a = np.array(a) - a[0]
-    t = np.array(t) - t[0]
-    amp1 = np.zeros_like(a)
-    trend = np.zeros_like(a)
+    a = np.array(a, dtype=float) - a[0]
+    t = np.array(t, dtype=float) - t[0]
+    amp1 = np.empty_like(a)
     n = len(a)
 
     for start in range(0, n, ntrv):
@@ -42,9 +42,8 @@ def detrend(t, a, ntrv=60):
             amp1[start:end] = a[start:end]
             continue
         coef = np.polyfit(dt, a[start:end], 1)
-        trend = np.append(trend, coef[0] * dt + coef[1])
+        amp1[start:end] = a[start:end] - (coef[0] * dt + coef[1])
 
-    amp1 = a - trend[:int(len(a))]
     amp1 = amp1 - amp1[0]
 
     return t, amp1
@@ -83,25 +82,23 @@ def curvature_correction(treg, amp, vr, R, ampinfl):
     tapr = np.array(tint).T
     del tint
 
-    # Times by Grabrovec and Allegretti (1994) equation
-    X = treg * vr
+    # Time correction per Grabrovec & Allegretti (1994), eq. on p.30:
+    #   t = X0/vr - [R - sqrt(R^2 - Y0^2)] / vr
+    # applied pointwise using each sample's own elongation Y0 from the zero
+    # line (amp - ampinfl) - the paper has no notion of resetting the
+    # correction at each zero-crossing; it is a direct, per-point formula.
     amp2 = amp - ampinfl
-    ki, kf = 0, 1
-    t_ga = np.empty(len(treg), dtype=np.float64)
-    sign1 = np.sign(amp2[0])
+    Y0 = np.clip(amp2, -R, R)  # guard against sqrt of a negative number
+    t_ga = treg - (R - np.sqrt(R**2 - Y0**2)) / vr
 
-    while kf < len(treg) - 1:
-        if np.sign(amp2[kf]) != sign1:
-            sign1 = np.sign(amp2[kf])
-            t_ga[ki:kf] = (X[ki:kf] - X[ki] - (R - np.sqrt(R**2 - (amp2[ki:kf] - amp2[ki])**2))) / vr + treg[ki]
-            ki = kf
-        kf = kf + 1
-    t_ga[ki:] = (X[ki:] - X[ki] - (R - np.sqrt(R**2 - (amp2[ki:])**2))) / vr + treg[ki]
-
-    for i in range(len(t_ga) - 1):
-        if t_ga[i + 1] <= t_ga[i]:
-            t_ga[i - 1:i + 2] = np.sort(t_ga[i - 1:i + 2])
-    t_ga = np.array(t_ga).T
+    # This pointwise correction is not guaranteed to be strictly increasing
+    # when adjacent digitized points have a large amplitude jump (common
+    # with hand-picked points, where R and vr can make the correction very
+    # sensitive to point-to-point noise). Project onto the closest
+    # (least-squares) non-decreasing sequence instead of a fragile local
+    # 3-point sort, which neither guarantees global monotonicity nor
+    # handles the first sample correctly.
+    t_ga = isotonic_regression(t_ga).x
 
     # Linear approximation between re-sampled and recovered times by G&A94
     # progressive time values
@@ -138,7 +135,16 @@ def curvature_correction(treg, amp, vr, R, ampinfl):
 
 def resample(old_time, data, sps, kind):
     """
-    Time series re-sample via spline + Lanczos interpolation.
+    Time series re-sample: fit an irregular-to-uniform curve at a fixed 0.2s
+    step, then resample that curve to the target sampling rate.
+
+    'slinear' fits a strictly piecewise-linear curve through the data.
+    'quadratic'/'cubic' both use a shape-preserving cubic Hermite spline
+    (PCHIP) rather than an exact higher-order interpolating spline: on
+    unevenly-spaced, noisy hand-digitized points, an exact quadratic/cubic
+    spline is prone to Runge's-phenomenon overshoot (wild oscillation between
+    distant points), producing amplitudes far outside the physical data
+    range. PCHIP is guaranteed to introduce no new extrema between points.
 
     :param old_time: sampled time (evenly sampled or not)
     :type old_time: array_like
@@ -146,35 +152,42 @@ def resample(old_time, data, sps, kind):
     :type data: array_like
     :param sps: sampling rate in samples per second
     :type sps: float
-    :param kind: spline interpolation order ('slinear', 'quadratic', 'cubic')
+    :param kind: fit method ('slinear', 'quadratic', 'cubic')
     :type kind: str
     :returns: (new_time, amp_res) resampled time and amplitude arrays
     :rtype: tuple(np.ndarray, np.ndarray)
     """
-    # Ensure consecutive times
-    max_iterations = 100
-    iteration = 0
-    while len(np.unique(old_time)) != len(old_time) and iteration < max_iterations:
-        iteration += 1
-        for t in range(len(old_time) - 2):
-            if old_time[t + 1] <= old_time[t] and old_time[t + 2] > old_time[t]:
-                deltat = (old_time[t + 2] - old_time[t]) / 2
-                old_time[t + 1] = old_time[t] + deltat
-            elif old_time[t + 1] <= old_time[t]:
-                old_time[t + 1] = old_time[t] + 0.005
+    old_time = np.asarray(old_time, dtype=float)
+    data = np.asarray(data, dtype=float)
 
-    s_map = {"slinear": 1, "quadratic": 2, "cubic": 3}
-    if kind in s_map:
-        kind = s_map[kind]
+    # When multiple points land on (near-)identical times instead of being
+    # jittered apart (ties are expected after a monotonicity-constrained
+    # time correction, e.g. curvature_correction), keep the sample with the
+    # largest absolute amplitude rather than averaging the group - averaging
+    # systematically damps genuine peak amplitudes, which matters for
+    # amplitude-sensitive downstream analysis (e.g. finite-source inversion).
+    unique_t, inverse = np.unique(old_time, return_inverse=True)
+    order = np.lexsort((np.abs(data), inverse))  # primary: bin, secondary: |amp| ascending
+    sorted_inverse = inverse[order]
+    sorted_data = data[order]
+    is_last_in_bin = np.empty(len(sorted_inverse), dtype=bool)
+    is_last_in_bin[:-1] = sorted_inverse[:-1] != sorted_inverse[1:]
+    is_last_in_bin[-1] = True
+    old_time, data = unique_t, sorted_data[is_last_in_bin]
 
     dt = 1 / sps
     at = np.arange(old_time.min(), old_time.max() + 0.2, 0.2)
-    aa = InterpolatedUnivariateSpline(np.sort(old_time), data, k=kind)(at)
+
+    if kind == "slinear":
+        aa = InterpolatedUnivariateSpline(old_time, data, k=1)(at)
+    else:
+        aa = PchipInterpolator(old_time, data)(at)
+
     new_time = np.arange(old_time.min(), at.max(), dt)
     old_dt = at[1] - at[0]
 
-    amp_res = osi.lanczos_interpolation(
-        aa, at.min(), old_dt, new_time.min(), dt, len(new_time), 20
+    amp_res = osi.weighted_average_slopes(
+        aa, at.min(), old_dt, new_time.min(), dt, len(new_time)
     )
 
     return new_time, amp_res
