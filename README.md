@@ -8,7 +8,7 @@ A web-based version of TIITBA built with FastAPI (Python) and vanilla TypeScript
 
 - **Backend**: FastAPI + OpenCV (headless) + ObsPy + NumPy/SciPy
 - **Frontend**: TypeScript + Vite + Plotly.js (no framework)
-- **Session state**: In-memory per-user sessions with automatic TTL expiry
+- **Session state**: Per-user sessions with automatic TTL expiry, persisted to disk (`storage/`) so the last 5 sessions — including the uploaded image and digitized points — can be restored even after the browser is closed
 
 ## Quick Start
 
@@ -96,12 +96,18 @@ Open http://localhost:8000 in your browser. To stop the application, run `docker
 
 ## Workflow
 
-1. **Upload Image** - Load a high-resolution seismogram scan
-2. **Process** - Rotate, enhance contrast (CLAHE), binarize (Otsu), trim
-3. **Define Scale** - Pick time-marks on the image or enter corner coordinates
-4. **Vectorize** - Double-click to mark points along the trace (Z=undo, Esc=stop)
-5. **Apply Corrections** - Detrend, curvature correction, resample, Wiechert response
-6. **Export** - Download as ASCII, SAC, or MINISEED
+1. **Upload Image** - Load a high-resolution seismogram scan. The pixel density (PPI) is auto-detected from the image metadata; if it can't be detected, a modal prompts you to enter it before scale definition and vectorization are enabled.
+2. **Process** - Rotate, enhance contrast (CLAHE), binarize (Otsu), trim (draws a highlighted rectangle over the selected ROI)
+3. **Define Scale** - Pick time-marks on the image or enter corner coordinates. A status badge confirms the computed drum speed / corner values once the scale is set.
+4. **Vectorize** - Click to mark points along the trace (Z=undo, Esc=stop). A one-time instructions popup explains the controls (dismissible via "don't show again").
+5. **Apply Corrections** - Detrend, curvature correction, resample, Wiechert response. If you didn't upload a separate ASCII file, the Corrections module automatically picks up the digitized points from the Vectorization step (once a scale is defined).
+6. **Export** - Download as ASCII, SAC, or MINISEED. SAC/MINISEED exports prompt for station, network, channel, and start time; MINISEED additionally asks for the component (Z/N/E), since it can hold multiple channels.
+
+## Session History
+
+The app keeps a rolling history of the last 5 sessions on disk (`storage/`), independent
+of the browser — click **History** in the sidebar to see recent sessions and restore one
+(image, scale, and digitized points are all reloaded onto the canvas).
 
 ## API Documentation
 
@@ -136,8 +142,9 @@ tiitba_webapp/
 │       ├── main.ts           # App initialization
 │       ├── api.ts            # Backend API client
 │       ├── state.ts          # Client state management
-│       ├── components/       # UI components
+│       ├── components/       # UI components (incl. modal.ts, the shared modal system)
 │       └── utils/            # Canvas math, keyboard shortcuts
+├── storage/                   # Persisted session data (images, points, history) — gitignored
 ├── requirements.txt
 ├── Dockerfile
 └── README.md
