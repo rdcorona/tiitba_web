@@ -10,7 +10,7 @@ import { initCanvas, refreshOverlay } from './components/canvas-viewer';
 import { initImagePanel, reloadImage, updateWorkspaceFilename, setPpiInputValue } from './components/image-panel';
 import { initVectorizationPanel } from './components/vectorization-panel';
 import { initCorrectionsPanel } from './components/corrections-panel';
-import { log } from './components/info-log';
+import { log, initInfoLog } from './components/info-log';
 import { Modal } from './components/modal';
 
 async function showHistoryModal() {
@@ -177,6 +177,7 @@ async function init() {
   }, 60000);
 
   // Initialize module-specific components
+  initInfoLog();
   initCanvas();
   initImagePanel();
   initVectorizationPanel();

@@ -165,6 +165,8 @@
 
 .form-row input, .form-row select {
   flex: 1;
+  min-width: 0;
+  width: 100%;
   padding: 8px 12px;
   background: var(--bg-input);
   color: var(--text);
@@ -173,6 +175,7 @@
   font-size: 0.8rem;
   font-family: 'JetBrains Mono', monospace;
   transition: all var(--transition-tech);
+  box-sizing: border-box;
 }
 
 .form-row input:focus, .form-row select:focus {

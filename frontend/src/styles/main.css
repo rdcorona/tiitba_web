@@ -300,6 +300,7 @@ body {
 .app-layout {
   display: grid;
   grid-template-columns: 84px 320px 1fr 280px;
+  transition: grid-template-columns var(--transition-tech);
   height: calc(100vh - 70px);
   padding: 0;
   gap: 0;
@@ -557,6 +558,10 @@ body {
   margin-right: 0.25rem;
 }
 
+.app-layout.log-collapsed {
+  grid-template-columns: 84px 320px 1fr 44px;
+}
+
 .info-log-panel {
   width: 280px;
   background-color: var(--bg-bento);
@@ -564,6 +569,67 @@ body {
   padding: 1rem;
   display: flex;
   flex-direction: column;
+  transition: width var(--transition-tech), padding var(--transition-tech);
+}
+
+.info-log-panel.collapsed {
+  width: 44px;
+  padding: 1rem 0.5rem;
+  overflow: hidden;
+}
+
+.info-log-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-shrink: 0;
+}
+
+.info-log-panel.collapsed .info-log-header {
+  justify-content: center;
+}
+
+.info-log-header .tab-nav {
+  flex: 1;
+  min-width: 0;
+  padding: 3px;
+  background: var(--bg-input);
+  border-bottom: none;
+  border-radius: var(--radius-sm);
+}
+
+.info-log-panel.collapsed .tab-nav,
+.info-log-panel.collapsed .log-tab-content {
+  display: none;
+}
+
+.log-collapse-btn {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-tech);
+}
+
+.log-collapse-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.log-collapse-btn svg {
+  transition: transform var(--transition-tech);
+}
+
+.info-log-panel.collapsed .log-collapse-btn svg {
+  transform: rotate(180deg);
 }
 
 .form-group {

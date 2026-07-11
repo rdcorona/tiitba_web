@@ -78,10 +78,10 @@ export function initVectorizationPanel() {
       try {
         await api.setCorners(state.sessionId, data.leftX, data.upY, data.rightX, data.downY);
         state.hasScale = true;
-        log(`Corners set: X=[${data.leftX}, ${data.rightX}] Y=[${data.upY}, ${data.downY}]`, 'success');
+        log(`Corners set: X=[${data.leftX}, ${data.rightX}] Y=[${data.upY}, ${data.downY}]`, 'success', 'vectorization');
         setScaleStatus(`Corners &middot; X=[${data.leftX}, ${data.rightX}] Y=[${data.upY}, ${data.downY}]`);
         state.notify();
-      } catch (e: any) { log(`Set corners failed: ${e.message}`, 'error'); }
+      } catch (e: any) { log(`Set corners failed: ${e.message}`, 'error', 'vectorization'); }
     });
   }
 
@@ -93,13 +93,13 @@ export function initVectorizationPanel() {
     state.currentMode = 'timemarks';
     state.localPoints.length = 0;
     if (btnSetScale) btnSetScale.textContent = 'Finish Picking';
-    log('Click on 3+ time-marks (60s apart). Press Finish when done.', 'info');
+    log('Click on 3+ time-marks (60s apart). Press Finish when done.', 'info', 'vectorization');
 
     setPointClickHandler((imgX, imgY) => {
       timemarkPoints.push({ x: imgX, y: imgY });
       state.localPoints.push({ x: imgX, y: imgY });
       refreshOverlay();
-      log(`Time-mark ${timemarkPoints.length}: (${imgX}, ${imgY})`, '');
+      log(`Time-mark ${timemarkPoints.length}: (${imgX}, ${imgY})`, '', 'vectorization');
     });
 
     state.notify();
@@ -111,14 +111,14 @@ export function initVectorizationPanel() {
     if (btnSetScale) btnSetScale.textContent = 'Define Scale';
 
     if (timemarkPoints.length < 3) {
-      log('Need at least 3 time-marks', 'error');
+      log('Need at least 3 time-marks', 'error', 'vectorization');
       clearOverlay();
       state.notify();
       return;
     }
 
     if (!state.ppi) {
-      log('Cannot compute drum speed: no PPI set for this image. Set a PPI value first.', 'error');
+      log('Cannot compute drum speed: no PPI set for this image. Set a PPI value first.', 'error', 'vectorization');
       clearOverlay();
       state.notify();
       return;
@@ -128,11 +128,11 @@ export function initVectorizationPanel() {
       const pts = timemarkPoints.map(p => [p.x, p.y]);
       const result = await api.setTimemarks(state.sessionId, pts, state.ppi);
       state.hasScale = true;
-      log(`Drum speed: ${result.drum_speed.toFixed(4)} mm/s`, 'success');
-      log(`Baseline amplitude: ${result.amp0.toFixed(2)} mm`, 'info');
+      log(`Drum speed: ${result.drum_speed.toFixed(4)} mm/s`, 'success', 'vectorization');
+      log(`Baseline amplitude: ${result.amp0.toFixed(2)} mm`, 'info', 'vectorization');
       setScaleStatus(`Time-marks &middot; Drum speed: ${result.drum_speed.toFixed(4)} mm/s &middot; Baseline: ${result.amp0.toFixed(2)} mm`);
     } catch (e: any) {
-      log(`Timemark calculation failed: ${e.message}`, 'error');
+      log(`Timemark calculation failed: ${e.message}`, 'error', 'vectorization');
     }
 
     clearOverlay();
@@ -197,7 +197,7 @@ export function initVectorizationPanel() {
     state.currentMode = 'vectorize';
     btnVectorize.classList.add('active');
     btnVectorize.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="9" x2="15" y2="15"></line><line x1="15" y1="9" x2="9" y2="15"></line></svg> Stop Vectorizing`;
-    log('Click to mark points. Z=undo, Esc=stop', 'info');
+    log('Click to mark points. Z=undo, Esc=stop', 'info', 'vectorization');
 
     setPointClickHandler((imgX, imgY) => {
       // Optimistic render
@@ -215,14 +215,14 @@ export function initVectorizationPanel() {
       pointOpQueue = pointOpQueue.then(async () => {
         try {
           const result = await api.addPoint(state.sessionId, imgX, imgY);
-          log(`Point ${result.index}: t=${result.time_or_x.toFixed(3)}, a=${result.amplitude_or_y.toFixed(3)}`, '');
+          log(`Point ${result.index}: t=${result.time_or_x.toFixed(3)}, a=${result.amplitude_or_y.toFixed(3)}`, '', 'vectorization');
         } catch (e: any) {
           // Revert this specific optimistic point (by reference, since other
           // points may have been added/removed while this call was queued)
           const idx = state.localPoints.indexOf(optimisticPoint);
           if (idx !== -1) state.localPoints.splice(idx, 1);
           refreshOverlay();
-          log(`Add point failed: ${e.message}`, 'error');
+          log(`Add point failed: ${e.message}`, 'error', 'vectorization');
         }
         state.notify();
       });
@@ -237,13 +237,13 @@ export function initVectorizationPanel() {
       pointOpQueue = pointOpQueue.then(async () => {
         try {
           await api.removeLastPoint(state.sessionId);
-          log('Undid last point', '');
+          log('Undid last point', '', 'vectorization');
         } catch (e: any) {
           // Backend removal failed (or was already out of sync) - restore
           // the point locally so the canvas matches the backend again.
           state.localPoints.push(removedPoint);
           refreshOverlay();
-          log(`Undo failed: ${e.message}`, 'error');
+          log(`Undo failed: ${e.message}`, 'error', 'vectorization');
         }
         state.notify();
       });
@@ -260,7 +260,7 @@ export function initVectorizationPanel() {
     setPointClickHandler(() => {});
     unregisterKey('z');
     unregisterKey('escape');
-    log(`Vectorization stopped. ${state.localPoints.length} points recorded.`, 'success');
+    log(`Vectorization stopped. ${state.localPoints.length} points recorded.`, 'success', 'vectorization');
     state.notify();
   }
 
@@ -272,8 +272,8 @@ export function initVectorizationPanel() {
       try {
         await api.clearPoints(state.sessionId);
         clearOverlay();
-        log('All points cleared', '');
-      } catch (e: any) { log(`Clear failed: ${e.message}`, 'error'); }
+        log('All points cleared', '', 'vectorization');
+      } catch (e: any) { log(`Clear failed: ${e.message}`, 'error', 'vectorization'); }
       state.notify();
     });
   });
@@ -282,7 +282,7 @@ export function initVectorizationPanel() {
   btnPlot.addEventListener('click', async () => {
     const plotTabBtn = document.querySelector('.workspace-tab[data-target="plot-view"]') as HTMLButtonElement;
     if (plotTabBtn) plotTabBtn.click();
-    
+
     try {
       const data = await api.getPlotData(state.sessionId);
       if (!data.time || data.time.length === 0) {
@@ -292,9 +292,9 @@ export function initVectorizationPanel() {
         [{ name: 'Vectorized', x: data.time, y: data.amplitude }],
         data.xlabel, data.ylabel,
       );
-      log('Plot updated', 'success');
-    } catch (e: any) { 
-      log(`Plot failed: ${e.message}`, 'error'); 
+      log('Plot updated', 'success', 'vectorization');
+    } catch (e: any) {
+      log(`Plot failed: ${e.message}`, 'error', 'vectorization');
       console.error("Plot error:", e);
     }
   });
@@ -303,6 +303,6 @@ export function initVectorizationPanel() {
   btnExport.addEventListener('click', () => {
     const url = api.getExportUrl(state.sessionId, 'ascii', 'vectorized');
     window.open(url, '_blank');
-    log('Exporting vectorized data as ASCII', 'info');
+    log('Exporting vectorized data as ASCII', 'info', 'vectorization');
   });
 }

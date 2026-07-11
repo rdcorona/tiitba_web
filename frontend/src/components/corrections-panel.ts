@@ -94,10 +94,9 @@ export function initCorrectionsPanel() {
       { name: 'stylet_length', label: 'Stylet Length (mm):', type: 'number', value: 120, step: 1 },
       { name: 'inflection_amp', label: 'Inflection Amplitude:', type: 'number', value: 0, step: 0.1 },
       { name: 'sps', label: 'Target SPS:', type: 'number', value: 100, min: 1 },
-      { name: 'spline_order', label: 'Spline Order:', type: 'select', value: 'cubic', options: [
+      { name: 'spline_order', label: 'Interpolation:', type: 'select', value: 'cubic', options: [
         { label: 'Linear', value: 'slinear' },
-        { label: 'Quadratic', value: 'quadratic' },
-        { label: 'Cubic', value: 'cubic' }
+        { label: 'Cubic (shape-preserving)', value: 'cubic' }
       ]}
     ], async (data) => {
       try {
@@ -114,10 +113,9 @@ export function initCorrectionsPanel() {
   btnResample.addEventListener('click', () => {
     showParameterModal('Resampling Parameters', [
       { name: 'sps', label: 'Target SPS:', type: 'number', value: 100, min: 1 },
-      { name: 'spline_order', label: 'Spline Order:', type: 'select', value: 'cubic', options: [
+      { name: 'spline_order', label: 'Interpolation:', type: 'select', value: 'cubic', options: [
         { label: 'Linear', value: 'slinear' },
-        { label: 'Quadratic', value: 'quadratic' },
-        { label: 'Cubic', value: 'cubic' }
+        { label: 'Cubic (shape-preserving)', value: 'cubic' }
       ]}
     ], async (data) => {
       try {
