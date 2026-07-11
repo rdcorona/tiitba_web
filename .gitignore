@@ -25,5 +25,8 @@ frontend/dist/
 # Uploads
 uploads/
 
+# Persisted session storage (runtime data, not source)
+storage/
+
 # Claude
 .claude/

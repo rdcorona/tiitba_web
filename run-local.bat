@@ -22,32 +22,20 @@ if %errorlevel% neq 0 (
 
 :: 2. Frontend Setup
 cd frontend
-if not exist "node_modules\" (
-    echo [FRONTEND] Installing dependencies...
-    call npm install
-    if %errorlevel% neq 0 (
-        echo [ERROR] Failed to install frontend dependencies.
-        pause
-        exit /b 1
-    )
+echo [FRONTEND] Installing dependencies...
+call npm install
+if %errorlevel% neq 0 (
+    echo [ERROR] Failed to install frontend dependencies.
+    pause
+    exit /b 1
 )
 
-if not exist "dist\" (
-    echo [FRONTEND] Building application...
-    call npm run build
-    if %errorlevel% neq 0 (
-        echo [ERROR] Failed to build the frontend.
-        pause
-        exit /b 1
-    )
-) else if "%1"=="--build" (
-    echo [FRONTEND] Rebuilding application...
-    call npm run build
-    if %errorlevel% neq 0 (
-        echo [ERROR] Failed to build the frontend.
-        pause
-        exit /b 1
-    )
+echo [FRONTEND] Building application to ensure latest version...
+call npm run build
+if %errorlevel% neq 0 (
+    echo [ERROR] Failed to build the frontend.
+    pause
+    exit /b 1
 )
 cd ..
 
@@ -65,24 +53,12 @@ if not exist ".venv\" (
 :: Activate virtual environment
 call .venv\Scripts\activate.bat
 
-:: Check if required packages are installed (using uvicorn as an indicator)
-where uvicorn >nul 2>nul
+echo [BACKEND] Ensuring latest dependencies from requirements.txt...
+python -m pip install -r requirements.txt
 if %errorlevel% neq 0 (
-    echo [BACKEND] Installing dependencies from requirements.txt...
-    python -m pip install -r requirements.txt
-    if %errorlevel% neq 0 (
-        echo [ERROR] Failed to install backend dependencies.
-        pause
-        exit /b 1
-    )
-) else if "%1"=="--install" (
-    echo [BACKEND] Updating dependencies from requirements.txt...
-    python -m pip install -r requirements.txt
-    if %errorlevel% neq 0 (
-        echo [ERROR] Failed to install backend dependencies.
-        pause
-        exit /b 1
-    )
+    echo [ERROR] Failed to install backend dependencies.
+    pause
+    exit /b 1
 )
 
 :: 4. Run App
@@ -93,7 +69,8 @@ echo                  SERVER IS READY!
 echo ========================================================
 echo.
 echo    1. Open your browser.
-echo    2. Go to: http://127.0.0.1:8000 for the backend API.
+echo    2. Go to: http://127.0.0.1:8000
+echo.
 echo    Keep this window open to keep the server running.
 echo    Press Ctrl+C to stop the server and close.
 echo ========================================================

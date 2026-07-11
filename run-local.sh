@@ -25,16 +25,12 @@ if ! command -v python3 &> /dev/null; then
 fi
 
 # 2. Frontend Setup
+echo "[FRONTEND] Installing dependencies..."
 cd frontend
-if [ ! -d "node_modules" ]; then
-    echo "[FRONTEND] Installing dependencies..."
-    npm install
-fi
+npm install
 
-if [ ! -d "dist" ] || [ "$1" == "--build" ]; then
-    echo "[FRONTEND] Building application..."
-    npm run build
-fi
+echo "[FRONTEND] Building application to ensure latest version..."
+npm run build
 cd ..
 
 # 3. Backend Setup
@@ -46,11 +42,8 @@ fi
 # Activate virtual environment
 source .venv/bin/activate
 
-# Check if required packages are installed (using uvicorn as an indicator)
-if ! command -v uvicorn &> /dev/null || [ "$1" == "--install" ]; then
-    echo "[BACKEND] Installing dependencies from requirements.txt..."
-    python3 -m pip install -r requirements.txt
-fi
+echo "[BACKEND] Ensuring latest dependencies from requirements.txt..."
+python3 -m pip install -r requirements.txt
 
 # 4. Run App
 echo ""
