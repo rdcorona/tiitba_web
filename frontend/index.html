@@ -246,8 +246,17 @@
 
     <!-- Right: Info Log -->
     <aside class="info-log-panel">
-      <h3>Log</h3>
-      <div id="info-log" class="info-log"></div>
+      <div class="info-log-header">
+        <div class="tab-nav">
+          <button class="tab-btn active" data-log-tab="general">General</button>
+          <button class="tab-btn" data-log-tab="vectorization">Vectorize</button>
+        </div>
+        <button id="btn-collapse-log" class="log-collapse-btn" title="Collapse log" aria-label="Collapse log">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </button>
+      </div>
+      <div id="info-log-general" class="info-log log-tab-content" data-log-tab="general"></div>
+      <div id="info-log-vectorization" class="info-log log-tab-content hidden" data-log-tab="vectorization"></div>
     </aside>
   </main>
   
