@@ -12,7 +12,6 @@ import time as _time
 
 import numpy as np
 from scipy.interpolate import InterpolatedUnivariateSpline, PchipInterpolator
-from scipy.optimize import isotonic_regression
 import obspy.signal.interpolation as osi
 
 
@@ -82,23 +81,25 @@ def curvature_correction(treg, amp, vr, R, ampinfl):
     tapr = np.array(tint).T
     del tint
 
-    # Time correction per Grabrovec & Allegretti (1994), eq. on p.30:
-    #   t = X0/vr - [R - sqrt(R^2 - Y0^2)] / vr
-    # applied pointwise using each sample's own elongation Y0 from the zero
-    # line (amp - ampinfl) - the paper has no notion of resetting the
-    # correction at each zero-crossing; it is a direct, per-point formula.
+    # Times by Grabrovec and Allegretti (1994) equation
+    X = treg * vr
     amp2 = amp - ampinfl
-    Y0 = np.clip(amp2, -R, R)  # guard against sqrt of a negative number
-    t_ga = treg - (R - np.sqrt(R**2 - Y0**2)) / vr
+    ki, kf = 0, 1
+    t_ga = np.empty(len(treg), dtype=np.float64)
+    sign1 = np.sign(amp2[0])
 
-    # This pointwise correction is not guaranteed to be strictly increasing
-    # when adjacent digitized points have a large amplitude jump (common
-    # with hand-picked points, where R and vr can make the correction very
-    # sensitive to point-to-point noise). Project onto the closest
-    # (least-squares) non-decreasing sequence instead of a fragile local
-    # 3-point sort, which neither guarantees global monotonicity nor
-    # handles the first sample correctly.
-    t_ga = isotonic_regression(t_ga).x
+    while kf < len(treg) - 1:
+        if np.sign(amp2[kf]) != sign1:
+            sign1 = np.sign(amp2[kf])
+            t_ga[ki:kf] = (X[ki:kf] - X[ki] - (R - np.sqrt(R**2 - (amp2[ki:kf] - amp2[ki])**2))) / vr + treg[ki]
+            ki = kf
+        kf = kf + 1
+    t_ga[ki:] = (X[ki:] - X[ki] - (R - np.sqrt(R**2 - (amp2[ki:])**2))) / vr + treg[ki]
+
+    for i in range(len(t_ga) - 1):
+        if t_ga[i + 1] <= t_ga[i]:
+            t_ga[i - 1:i + 2] = np.sort(t_ga[i - 1:i + 2])
+    t_ga = np.array(t_ga).T
 
     # Linear approximation between re-sampled and recovered times by G&A94
     # progressive time values
