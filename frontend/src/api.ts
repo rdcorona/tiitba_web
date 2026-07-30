@@ -210,12 +210,8 @@ export async function invertPolarity(sid: string) {
   return request(`/sessions/${sid}/corrections/polarity`, { method: 'POST' });
 }
 
-export async function detrend(sid: string, windowSize: number) {
-  return request(`/sessions/${sid}/corrections/detrend`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ window_size: windowSize }),
-  });
+export async function detrend(sid: string) {
+  return request(`/sessions/${sid}/corrections/detrend`, { method: 'POST' });
 }
 
 export async function curvatureCorrection(

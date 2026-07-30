@@ -7,6 +7,7 @@ Generates downloadable files in ASCII, SAC, and MINISEED formats.
 import tempfile
 from pathlib import Path
 
+import numpy as np
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import FileResponse
 
@@ -17,6 +18,16 @@ from backend.core import io as tio
 from backend.core import vectorization as vec
 
 router = APIRouter(tags=["export"])
+
+# Data types with an evenly-sampled time axis; required for SAC/MiniSEED export.
+_EVENLY_SAMPLED_TYPES = {"curvature_ga", "curvature_ls", "resampled", "response"}
+
+
+def _uniform_delta(t: np.ndarray, data: str) -> float:
+    """Compute the sample interval of an evenly-sampled time array."""
+    if len(t) < 2:
+        raise HTTPException(400, f"Not enough samples in '{data}' to determine a sampling interval")
+    return float(np.median(np.diff(t)))
 
 
 @router.get("/sessions/{sid}/export/ascii")
@@ -57,12 +68,11 @@ async def export_sac(
     session: SessionState = Depends(get_session),
 ):
     """Download data as SAC file."""
+    if data not in _EVENLY_SAMPLED_TYPES:
+        raise HTTPException(400, f"'{data}' is not evenly sampled; SAC requires one of {sorted(_EVENLY_SAMPLED_TYPES)}")
+
     t, a = _resolve_data(session, data)
-
-    if session.sps is None:
-        raise HTTPException(400, "Data must be resampled before SAC export (uniform sampling required)")
-
-    delta = 1.0 / session.sps
+    delta = _uniform_delta(t, data)
     try:
         header = tio.build_sac_header(
             station=station or "STA",
@@ -100,12 +110,11 @@ async def export_miniseed(
     session: SessionState = Depends(get_session),
 ):
     """Download data as MINISEED file."""
+    if data not in _EVENLY_SAMPLED_TYPES:
+        raise HTTPException(400, f"'{data}' is not evenly sampled; MiniSEED requires one of {sorted(_EVENLY_SAMPLED_TYPES)}")
+
     t, a = _resolve_data(session, data)
-
-    if session.sps is None:
-        raise HTTPException(400, "Data must be resampled before MINISEED export")
-
-    delta = 1.0 / session.sps
+    delta = _uniform_delta(t, data)
     try:
         header = tio.build_sac_header(
             station=station or "STA",
@@ -138,19 +147,12 @@ def _resolve_data(session: SessionState, data: str):
     if data == "vectorized":
         if not session.points:
             raise HTTPException(400, "No vectorized points")
-        if session.scale_mode == "timemarks" and session.vr is not None:
-            return vec.pixels_to_timemarks(
-                session.points, session.ppi, session.vr,
-                session.amp0, session.imheight_mm,
-            )
-        elif session.scale_mode == "corners" and session.x_values is not None:
-            h, w = session.img.shape[:2]
-            return vec.pixels_to_corners(
-                session.points, session.x_values, session.y_values, w, h,
-            )
-        else:
-            h = session.img.shape[0] if session.img is not None else 0
-            return vec.pixels_to_raw(session.points, h)
+        img_shape = session.img.shape[:2] if session.img is not None else (0, 0)
+        return vec.convert_points(
+            session.points, session.scale_mode,
+            ppi=session.ppi, vr=session.vr, amp0=session.amp0, image_height_mm=session.imheight_mm,
+            x_values=session.x_values, y_values=session.y_values, img_shape=img_shape,
+        )
 
     elif data == "detrend":
         if session.amp1 is None:
@@ -158,9 +160,9 @@ def _resolve_data(session: SessionState, data: str):
         return session.treg, session.amp1
 
     elif data == "curvature_ga":
-        if session.amp_res is None or session.t_ga_res is None:
+        if session.amp_ga_res is None or session.t_ga_res is None:
             raise HTTPException(400, "No G&A94 curvature data available")
-        return session.t_ga_res, session.amp_res
+        return session.t_ga_res, session.amp_ga_res
 
     elif data == "curvature_ls":
         if session.amp1_res is None or session.tapr_res is None:
@@ -168,17 +170,14 @@ def _resolve_data(session: SessionState, data: str):
         return session.tapr_res, session.amp1_res
 
     elif data == "resampled":
-        if session.amp_res is None:
+        if session.amp_res is None or session.tres is None:
             raise HTTPException(400, "No resampled data available")
-        t = session.tres if session.tres is not None else session.t_ga_res
-        return t, session.amp_res
+        return session.tres, session.amp_res
 
     elif data == "response":
         if session.amp_correct is None:
             raise HTTPException(400, "No instrument response data available")
-        t = session.tres if session.tres is not None else session.t_ga_res
-        if t is None:
-            t = session.treg
+        t = session.t_ga_res if session.t_ga_res is not None else session.tres
         return t, session.amp_correct
 
     else:

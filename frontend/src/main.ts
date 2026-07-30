@@ -115,12 +115,12 @@ async function init() {
       
       log(`Switched to ${tabId.toUpperCase()} module`, 'info');
 
-      // Auto-load trigger for Corrections
-      if (tabId === 'corrections' && !state.hasData) {
+      // Auto-load data when entering the Corrections tab.
+      if (tabId === 'corrections') {
           api.autoLoadData(state.sessionId).then(result => {
               if (result) {
                   state.hasData = true;
-                  log(`Auto-loaded data: ${result.filename}`, 'success');
+                  log(`Data ready: ${result.filename} (${result.n_samples} samples)`, 'success');
                   state.notify();
               }
           }).catch(() => {});

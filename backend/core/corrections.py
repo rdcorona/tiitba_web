@@ -12,37 +12,27 @@ import time as _time
 
 import numpy as np
 from scipy.interpolate import InterpolatedUnivariateSpline, PchipInterpolator
+from scipy.optimize import isotonic_regression
 import obspy.signal.interpolation as osi
 
 
-def detrend(t, a, ntrv=60):
+def detrend(t, a):
     """
-    De-trend time series in overlapped windows by first derivative
-    and a second degree polynomial function.
+    De-trend time series by removing a single linear fit over the whole
+    series.
 
     :param t: time array
     :type t: array_like
     :param a: amplitude array
     :type a: array_like
-    :param ntrv: time window size in samples
-    :type ntrv: int
     :returns: (t, amp1) detrended time and amplitude arrays
     :rtype: tuple(np.ndarray, np.ndarray)
     """
     a = np.array(a, dtype=float) - a[0]
     t = np.array(t, dtype=float) - t[0]
-    amp1 = np.empty_like(a)
-    n = len(a)
 
-    for start in range(0, n, ntrv):
-        end = min(start + ntrv, n)
-        dt = t[start:end] - t[start]
-        if len(dt) < 2:
-            amp1[start:end] = a[start:end]
-            continue
-        coef = np.polyfit(dt, a[start:end], 1)
-        amp1[start:end] = a[start:end] - (coef[0] * dt + coef[1])
-
+    coef = np.polyfit(t, a, 1)
+    amp1 = a - np.polyval(coef, t)
     amp1 = amp1 - amp1[0]
 
     return t, amp1
@@ -67,7 +57,6 @@ def curvature_correction(treg, amp, vr, R, ampinfl):
     :returns: (tapr, t_ga) approximated and G&A94 corrected time arrays
     :rtype: tuple(np.ndarray, np.ndarray)
     """
-    # Parameters and variables for loop
     sign0 = np.sign(amp[0])
     ki, kf = 0, 1
     tint = []
@@ -81,7 +70,6 @@ def curvature_correction(treg, amp, vr, R, ampinfl):
     tapr = np.array(tint).T
     del tint
 
-    # Times by Grabrovec and Allegretti (1994) equation
     X = treg * vr
     amp2 = amp - ampinfl
     ki, kf = 0, 1
@@ -96,13 +84,8 @@ def curvature_correction(treg, amp, vr, R, ampinfl):
         kf = kf + 1
     t_ga[ki:] = (X[ki:] - X[ki] - (R - np.sqrt(R**2 - (amp2[ki:])**2))) / vr + treg[ki]
 
-    for i in range(len(t_ga) - 1):
-        if t_ga[i + 1] <= t_ga[i]:
-            t_ga[i - 1:i + 2] = np.sort(t_ga[i - 1:i + 2])
-    t_ga = np.array(t_ga).T
+    t_ga = isotonic_regression(t_ga).x
 
-    # Linear approximation between re-sampled and recovered times by G&A94
-    # progressive time values
     N = len(treg)
     G = np.transpose(np.matrix([np.ones(N), tapr.T]))
     ssq1 = np.sqrt(np.sum((t_ga - tapr)**2) / np.sum(tapr**2))
@@ -136,16 +119,10 @@ def curvature_correction(treg, amp, vr, R, ampinfl):
 
 def resample(old_time, data, sps, kind):
     """
-    Time series re-sample: fit an irregular-to-uniform curve at a fixed 0.2s
-    step, then resample that curve to the target sampling rate.
-
-    'slinear' fits a strictly piecewise-linear curve through the data.
-    'quadratic'/'cubic' both use a shape-preserving cubic Hermite spline
-    (PCHIP) rather than an exact higher-order interpolating spline: on
-    unevenly-spaced, noisy hand-digitized points, an exact quadratic/cubic
-    spline is prone to Runge's-phenomenon overshoot (wild oscillation between
-    distant points), producing amplitudes far outside the physical data
-    range. PCHIP is guaranteed to introduce no new extrema between points.
+    Time series re-sample: fit an irregular-to-uniform curve on an
+    intermediate grid, then resample to the target rate. 'slinear' fits a
+    piecewise-linear curve; 'quadratic'/'cubic' use a shape-preserving
+    cubic Hermite spline (PCHIP).
 
     :param old_time: sampled time (evenly sampled or not)
     :type old_time: array_like
@@ -161,14 +138,8 @@ def resample(old_time, data, sps, kind):
     old_time = np.asarray(old_time, dtype=float)
     data = np.asarray(data, dtype=float)
 
-    # When multiple points land on (near-)identical times instead of being
-    # jittered apart (ties are expected after a monotonicity-constrained
-    # time correction, e.g. curvature_correction), keep the sample with the
-    # largest absolute amplitude rather than averaging the group - averaging
-    # systematically damps genuine peak amplitudes, which matters for
-    # amplitude-sensitive downstream analysis (e.g. finite-source inversion).
     unique_t, inverse = np.unique(old_time, return_inverse=True)
-    order = np.lexsort((np.abs(data), inverse))  # primary: bin, secondary: |amp| ascending
+    order = np.lexsort((np.abs(data), inverse))
     sorted_inverse = inverse[order]
     sorted_data = data[order]
     is_last_in_bin = np.empty(len(sorted_inverse), dtype=bool)
@@ -177,7 +148,8 @@ def resample(old_time, data, sps, kind):
     old_time, data = unique_t, sorted_data[is_last_in_bin]
 
     dt = 1 / sps
-    at = np.arange(old_time.min(), old_time.max() + 0.2, 0.2)
+    grid_step = min(0.2, dt)
+    at = np.arange(old_time.min(), old_time.max() + 1e-6, grid_step)
 
     if kind == "slinear":
         aa = InterpolatedUnivariateSpline(old_time, data, k=1)(at)
