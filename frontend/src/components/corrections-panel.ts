@@ -76,16 +76,12 @@ export function initCorrectionsPanel() {
     } catch (e: any) { log(`Operation failed: ${e.message}`, 'error'); }
   });
 
-  btnDetrend.addEventListener('click', () => {
-    showParameterModal('Detrending Parameters', [
-      { name: 'window_size', label: 'Window Size (samples):', type: 'number', value: 60, min: 1 }
-    ], async (data) => {
-      try {
-        await api.detrend(state.sessionId, data.window_size);
-        log('Detrending applied', 'success');
-        refreshPlot();
-      } catch (e: any) { log(`Detrend failed: ${e.message}`, 'error'); }
-    });
+  btnDetrend.addEventListener('click', async () => {
+    try {
+      await api.detrend(state.sessionId);
+      log('Detrending applied', 'success');
+      refreshPlot();
+    } catch (e: any) { log(`Detrend failed: ${e.message}`, 'error'); }
   });
 
   btnCurvature.addEventListener('click', () => {
@@ -167,7 +163,7 @@ export function initCorrectionsPanel() {
 
   async function refreshPlot() {
     try {
-      const data = await api.getDataPlot(state.sessionId, 'raw,detrend,resampled,response');
+      const data = await api.getDataPlot(state.sessionId, 'raw,detrend,curvature_ga,resampled,response');
       const plotTabBtn = document.querySelector('.workspace-tab[data-target="plot-view"]') as HTMLButtonElement;
       if (plotTabBtn) plotTabBtn.click();
       plotTraces(data.traces, 'Time (s)', 'Amplitude');

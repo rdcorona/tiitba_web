@@ -108,3 +108,33 @@ def pixels_to_raw(points_px, img_rows):
     """
     points = np.array(points_px)
     return points[:, 0], (points[:, 1] * -1) + img_rows
+
+
+def convert_points(points_px, scale_mode, ppi=None, vr=None, amp0=None,
+                    image_height_mm=None, x_values=None, y_values=None,
+                    img_shape=None):
+    """
+    Convert digitized pixel points to physical/scaled coordinates using
+    whichever scale method is active. Points are returned in digitized
+    order (not sorted by time), since near a peak the raw time axis can
+    legitimately go backwards due to the seismograph pen's arc - sorting
+    would destroy that signal before curvature_correction() can use it.
+
+    :param points_px: pixel coordinates [(x, y), ...]
+    :type points_px: list[tuple] or np.ndarray
+    :param scale_mode: 'timemarks' | 'corners' | None (raw pixel fallback)
+    :type scale_mode: str or None
+    :param img_shape: (rows, cols) of the image; needed for 'corners' and
+        the raw-pixel fallback
+    :type img_shape: tuple(int, int) or None
+    :returns: (t_or_x, a_or_y) arrays, in digitized order
+    :rtype: tuple(np.ndarray, np.ndarray)
+    """
+    if scale_mode == "timemarks" and vr is not None:
+        return pixels_to_timemarks(points_px, ppi, vr, amp0, image_height_mm)
+    elif scale_mode == "corners" and x_values is not None:
+        h, w = img_shape
+        return pixels_to_corners(points_px, x_values, y_values, w, h)
+    else:
+        h = img_shape[0] if img_shape is not None else 0
+        return pixels_to_raw(points_px, h)

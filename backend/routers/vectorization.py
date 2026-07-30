@@ -71,8 +71,6 @@ async def add_point(
     """Add a digitized point. Returns converted physical coordinates."""
     session.points.append((body.x, body.y))
     idx = len(session.points) - 1
-
-    # Convert to physical coordinates
     time_or_x, amp_or_y = _convert_point(session, body.x, body.y)
 
     return PointResponse(
@@ -126,32 +124,21 @@ async def get_plot_data(
     if not session.points:
         raise HTTPException(400, "No points to plot")
 
+    img_shape = session.img.shape[:2] if session.img is not None else (0, 0)
+    t, a = vec.convert_points(
+        session.points, session.scale_mode,
+        ppi=session.ppi, vr=session.vr, amp0=session.amp0, image_height_mm=session.imheight_mm,
+        x_values=session.x_values, y_values=session.y_values, img_shape=img_shape,
+    )
+
     if session.scale_mode == "timemarks" and session.vr is not None:
-        t, a = vec.pixels_to_timemarks(
-            session.points, session.ppi, session.vr,
-            session.amp0, session.imheight_mm,
-        )
-        return PlotData(
-            time=t.tolist(), amplitude=a.tolist(),
-            xlabel="Time [s]", ylabel="Amplitude [mm]",
-        )
+        xlabel, ylabel = "Time [s]", "Amplitude [mm]"
     elif session.scale_mode == "corners" and session.x_values is not None:
-        h, w = session.img.shape[:2]
-        x, y = vec.pixels_to_corners(
-            session.points, session.x_values, session.y_values, w, h,
-        )
-        return PlotData(
-            time=x.tolist(), amplitude=y.tolist(),
-            xlabel="X", ylabel="Y",
-        )
+        xlabel, ylabel = "X", "Y"
     else:
-        # Raw pixels
-        h = session.img.shape[0] if session.img is not None else 0
-        x, y = vec.pixels_to_raw(session.points, h)
-        return PlotData(
-            time=x.tolist(), amplitude=y.tolist(),
-            xlabel="X [pixels]", ylabel="Y [pixels]",
-        )
+        xlabel, ylabel = "X [pixels]", "Y [pixels]"
+
+    return PlotData(time=t.tolist(), amplitude=a.tolist(), xlabel=xlabel, ylabel=ylabel)
 
 
 def _convert_point(session: SessionState, x: int, y: int) -> tuple[float, float]:

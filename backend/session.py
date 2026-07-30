@@ -41,15 +41,18 @@ class SessionState:
     y_values: np.ndarray | None = None
     imheight_mm: float | None = None
 
-    # Corrections
+    # Corrections - each pipeline stage has its own field so re-running one
+    # correction never overwrites a different correction's output.
+    data_source: str | None = None  # 'upload' | 'points' - which raw source is authoritative
     treg: np.ndarray | None = None
     amp: np.ndarray | None = None
     amp1: np.ndarray | None = None  # detrended
-    amp_res: np.ndarray | None = None
-    amp1_res: np.ndarray | None = None
-    t_ga_res: np.ndarray | None = None
-    tapr_res: np.ndarray | None = None
-    tres: np.ndarray | None = None
+    amp_res: np.ndarray | None = None  # standalone resample output (amplitude)
+    amp_ga_res: np.ndarray | None = None  # curvature G&A94 output (amplitude)
+    amp1_res: np.ndarray | None = None  # curvature least-squares variant output (amplitude)
+    t_ga_res: np.ndarray | None = None  # curvature G&A94 output (time)
+    tapr_res: np.ndarray | None = None  # curvature least-squares variant output (time)
+    tres: np.ndarray | None = None  # standalone resample output (time)
     sps: int | None = None
     amp_correct: np.ndarray | None = None
     datafile_name: str | None = None
@@ -64,7 +67,7 @@ class SessionState:
         # Remove large binary/numpy data for the JSON index
         excluded = [
             'img', 'img_pre_binarize', 'display_jpeg',
-            'treg', 'amp', 'amp1', 'amp_res', 'amp1_res',
+            'treg', 'amp', 'amp1', 'amp_res', 'amp_ga_res', 'amp1_res',
             't_ga_res', 'tapr_res', 'tres', 'amp_correct',
             'x_values', 'y_values'
         ]
@@ -141,7 +144,7 @@ class SessionManager:
 
         numpy_arrays = {
             'treg': session.treg, 'amp': session.amp, 'amp1': session.amp1,
-            'amp_res': session.amp_res, 'amp1_res': session.amp1_res,
+            'amp_res': session.amp_res, 'amp_ga_res': session.amp_ga_res, 'amp1_res': session.amp1_res,
             't_ga_res': session.t_ga_res, 'tapr_res': session.tapr_res,
             'tres': session.tres, 'amp_correct': session.amp_correct,
             'x_values': session.x_values, 'y_values': session.y_values
@@ -184,7 +187,7 @@ class SessionManager:
 
         # Restore numpy arrays
         for name in [
-            'treg', 'amp', 'amp1', 'amp_res', 'amp1_res',
+            'treg', 'amp', 'amp1', 'amp_res', 'amp_ga_res', 'amp1_res',
             't_ga_res', 'tapr_res', 'tres', 'amp_correct',
             'x_values', 'y_values'
         ]:

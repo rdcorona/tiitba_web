@@ -97,9 +97,6 @@ class PlotData(BaseModel):
 
 # --- Corrections ---
 
-class DetrendRequest(BaseModel):
-    window_size: int = 60
-
 class CurvatureRequest(BaseModel):
     drum_speed: float
     stylet_length: float
